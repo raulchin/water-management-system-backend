@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: gateway
+  profiles:
+    default: default
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: ms-auth-server
+              uri: lb://MS-AUTH-SERVER
+              predicates:
+                - Path=/ms-auth-server/**
+
+server:
+  port: 4040
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+    register-with-eureka: true
+    fetch-registry: true
+  

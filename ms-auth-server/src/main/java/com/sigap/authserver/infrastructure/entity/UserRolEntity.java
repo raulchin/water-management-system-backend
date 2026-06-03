@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 public class UserRolEntity {
 
     @EmbeddedId
-    private UserRolId id;
+    private UserRolId id = new UserRolId();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("idUser")
@@ -32,6 +32,7 @@ public class UserRolEntity {
 
     public static UserRolEntity of(UserEntity usuario, RolEntity rol) {
         UserRolEntity entity = new UserRolEntity();
+        entity.setId(new UserRolId());
         entity.setUser(usuario);
         entity.setRol(rol);
         return entity;

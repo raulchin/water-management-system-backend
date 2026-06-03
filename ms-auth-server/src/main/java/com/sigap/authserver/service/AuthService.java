@@ -41,7 +41,7 @@ public class AuthService {
         log.info("Registrar un usuario...");
 
         validarDuplicados(request.username(), request.email());
-        RolEntity rolEntity = rolRepository.findByRolNameIgnoreCase(ROL_USER)
+        RolEntity rolEntity = rolRepository.findByRolNameIgnoreCase(request.rol())
                 .orElseThrow(() -> new IllegalStateException("No existe el rol USER en la base de datos."));
 
         UserEntity user = new UserEntity();
@@ -95,7 +95,7 @@ public class AuthService {
     private LoginResponse buildLoginResponse(UserEntity usuario) {
         List<String> roles = extraerRoles(usuario);
         String token = jwtService.generateToken(usuario.getIdUser(), usuario.getUsername(), roles);
-
+        log.info("Token generado correctamente para usuario: {}", usuario.getUsername());
         return new LoginResponse(
                 token,
                 "Bearer",

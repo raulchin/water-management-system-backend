@@ -26,6 +26,7 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
+        log.info("Inicia el proceso para registro de un usuario nuevo...");
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
     }
 

@@ -3,6 +3,7 @@ package com.sigap.partner.controller;
 import com.sigap.partner.dto.common.ApiResponse;
 import com.sigap.partner.dto.partner.PartnerCreateRequest;
 import com.sigap.partner.dto.partner.PartnerResponse;
+import com.sigap.partner.dto.partner.PartnerUpdateRequest;
 import com.sigap.partner.service.PartnerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +35,22 @@ public class PartnerController {
 
     @GetMapping("/{partnerId}")
     public ResponseEntity<ApiResponse<PartnerResponse>> findById(@PathVariable Long partnerId) {
+        log.info("Buscar el socio segun su id: {}", partnerId);
         return ResponseEntity.ok(ApiResponse.ok(partnerService.findById(partnerId)));
+    }
+
+    @DeleteMapping("/{partnerId}")
+    public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long partnerId) {
+        partnerService.delete(partnerId);
+        return ResponseEntity.ok(ApiResponse.ok("Socio eliminado correctamente", null));
+    }
+
+    @PutMapping("/{partnerId}")
+    public ResponseEntity<ApiResponse<PartnerResponse>> update(
+            @PathVariable Long partnerId,
+            @Valid @RequestBody PartnerUpdateRequest request
+    ) {
+        PartnerResponse response = partnerService.update(partnerId, request);
+        return ResponseEntity.ok(ApiResponse.ok("Socio actualizado correctamente", response));
     }
 }

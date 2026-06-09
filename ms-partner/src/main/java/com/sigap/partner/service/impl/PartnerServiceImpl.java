@@ -47,7 +47,7 @@ public class PartnerServiceImpl implements PartnerService {
 
     @Override
     public PartnerResponse findById(Long partnerId) {
-
+        log.info("Buscar el socio en la base de datos...");
         return PartnerMapper.toResponse(findPartnerEntity(partnerId));
 
     }

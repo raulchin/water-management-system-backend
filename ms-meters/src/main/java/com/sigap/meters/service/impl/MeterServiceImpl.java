@@ -11,6 +11,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Locale;
 
 @Service
@@ -43,6 +44,17 @@ public class MeterServiceImpl implements MeterService {
         MeterEntity saved = meterRepository.save(entity);
 
         return toResponse(saved);
+    }
+
+    @Override
+    @Transactional
+    public List<MeterResponse> findAll() {
+
+        return meterRepository.findAll()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+
     }
 
     private String normalize(String value) {

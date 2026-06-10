@@ -7,13 +7,11 @@ import com.sigap.meters.service.MeterService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/medidores")
@@ -38,5 +36,14 @@ public class MeterController {
                 .created(location)
                 .body(ApiResponse.success("Medidor registrado correctamente", response));
 
+    }
+
+    @GetMapping
+    public ResponseEntity<ApiResponse<List<MeterResponse>>> findAll() {
+        List<MeterResponse> response = meterService.findAll();
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Medidores consultados correctamente", response)
+        );
     }
 }

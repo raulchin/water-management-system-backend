@@ -33,6 +33,14 @@ public class PartnerController {
         return ResponseEntity.ok(ApiResponse.ok(partnerService.findAll()));
     }
 
+    @GetMapping("/tax-identification/{taxIdentification}")
+    public ResponseEntity<ApiResponse<PartnerResponse>> findByTaxIdentification(
+            @PathVariable String taxIdentification
+    ) {
+        log.info("Buscar socio por cedula/RUC: {}", taxIdentification);
+        return ResponseEntity.ok(ApiResponse.ok(partnerService.findByTaxIdentification(taxIdentification)));
+    }
+
     @GetMapping("/{partnerId}")
     public ResponseEntity<ApiResponse<PartnerResponse>> findById(@PathVariable Long partnerId) {
         log.info("Buscar el socio segun su id: {}", partnerId);
@@ -53,4 +61,6 @@ public class PartnerController {
         PartnerResponse response = partnerService.update(partnerId, request);
         return ResponseEntity.ok(ApiResponse.ok("Socio actualizado correctamente", response));
     }
+
+
 }

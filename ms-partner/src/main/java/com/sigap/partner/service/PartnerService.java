@@ -14,6 +14,8 @@ public interface PartnerService {
 
     PartnerResponse findById(Long partnerId);
 
+    PartnerResponse findByTaxIdentification(String taxIdentification);
+
     PartnerResponse update(Long partnerId, PartnerUpdateRequest request);
 
     void delete(Long partnerId);

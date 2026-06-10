@@ -53,6 +53,18 @@ public class PartnerServiceImpl implements PartnerService {
     }
 
     @Override
+    public PartnerResponse findByTaxIdentification(String taxIdentification) {
+
+        String normalizedTaxIdentification = taxIdentification.trim();
+
+        PartnerEntity entity = partnerRepository.findByTaxIdentification(normalizedTaxIdentification)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Socio no encontrado con cedula/RUC " + normalizedTaxIdentification
+                ));
+        return PartnerMapper.toResponse(entity);
+    }
+
+    @Override
     @Transactional
     public PartnerResponse update(Long partnerId, PartnerUpdateRequest request) {
         PartnerEntity entity = findPartnerEntity(partnerId);

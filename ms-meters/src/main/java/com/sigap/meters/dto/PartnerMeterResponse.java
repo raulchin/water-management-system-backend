@@ -13,7 +13,10 @@ public record PartnerMeterResponse(
         LocalDate fechaRetiro,
         String estado,
         String observacion,
-        LocalDateTime fechaActualizacion
+        LocalDateTime fechaActualizacion,
+        String marcaMedidor,
+        String modeloMedidor,
+        String identificacionSocio
 
 ) {
 }

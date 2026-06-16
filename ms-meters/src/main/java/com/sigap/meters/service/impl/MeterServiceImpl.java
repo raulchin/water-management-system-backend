@@ -5,9 +5,10 @@ import com.sigap.meters.dto.MeterResponse;
 import com.sigap.meters.entity.MeterEntity;
 import com.sigap.meters.enums.MeterStatus;
 import com.sigap.meters.exception.DuplicateResourceException;
+import com.sigap.meters.exception.ResourceNotFoundException;
 import com.sigap.meters.repository.MeterRepository;
 import com.sigap.meters.service.MeterService;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -55,6 +56,19 @@ public class MeterServiceImpl implements MeterService {
                 .map(this::toResponse)
                 .toList();
 
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MeterResponse findByMeterNumber(String meterNumber) {
+        String normalizedMeterNumber = normalize(meterNumber);
+
+        MeterEntity entity = meterRepository.findByNumeroMedidor(normalizedMeterNumber)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe un medidor registrado con el numero: " + normalizedMeterNumber
+                ));
+
+        return toResponse(entity);
     }
 
     private String normalize(String value) {

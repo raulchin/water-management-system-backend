@@ -10,4 +10,6 @@ public interface MeterService {
     MeterResponse registerMeter(CreateMeterRequest request);
 
     List<MeterResponse> findAll();
+
+    MeterResponse findByMeterNumber(String meterNumber);
 }

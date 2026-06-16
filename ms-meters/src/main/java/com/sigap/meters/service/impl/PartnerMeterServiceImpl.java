@@ -18,7 +18,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -80,7 +82,7 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
                                 ? LocalDate.now()
                                 : request.fechaAsignacion()
                 )
-                .estado(ESTADO_ACTIVO)
+                .estado(request.estado())
                 .observacion(normalize(request.observacion()))
                 .build();
 
@@ -103,9 +105,18 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
     @Transactional(readOnly = true)
     public List<PartnerMeterResponse> findAll() {
 
-        return partnerMeterRepository.findAll()
-                .stream()
-                .map(this::toResponse)
+        log.info("Listar todas las asignaciones.");
+        List<PartnerMeterEntity> assignments = partnerMeterRepository.findAll();
+
+        Map<Long, PartnerResponse> socios = assignments.stream()
+                .map(PartnerMeterEntity::getSocioId)
+                .distinct()
+                .collect(Collectors.toMap(
+                        socioId -> socioId,
+                        this::findPartner
+                ));
+        return assignments.stream()
+                .map(entity -> toResponseSo(entity, socios.get(entity.getSocioId())))
                 .toList();
     }
 
@@ -184,7 +195,7 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
                 ));
     }
 
-    private PartnerMeterResponse toResponse(PartnerMeterEntity entity) {
+    private PartnerMeterResponse toResponse(PartnerMeterEntity entity ) {
         return new PartnerMeterResponse(
                 entity.getAsignacionId(),
                 entity.getMedidor().getMedidorId(),
@@ -194,7 +205,10 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
                 entity.getFechaRetiro(),
                 entity.getEstado(),
                 entity.getObservacion(),
-                entity.getFechaActualizacion()
+                entity.getFechaActualizacion(),
+                entity.getMedidor().getMarca(),
+                entity.getMedidor().getModelo(),
+                ""
         );
     }
 
@@ -218,6 +232,37 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
         if (fechaAsignacion != null && fechaRetiro.isBefore(fechaAsignacion)) {
             throw new BadRequestException("La fecha de retiro no puede ser menor a la fecha de asignación");
         }
+    }
+
+    private PartnerResponse findPartner(Long socioId) {
+        try {
+            PartnerApiResponse<PartnerResponse> response = partnerClient.findById(socioId);
+
+            if (response == null || response.data() == null) {
+                throw new ResourceNotFoundException("No existe el socio con id: " + socioId);
+            }
+
+            return response.data();
+        } catch (FeignException.NotFound ex) {
+            throw new ResourceNotFoundException("No existe el socio con id: " + socioId);
+        }
+    }
+
+    private PartnerMeterResponse toResponseSo(PartnerMeterEntity entity, PartnerResponse socio) {
+        return new PartnerMeterResponse(
+                entity.getAsignacionId(),
+                entity.getMedidor().getMedidorId(),
+                entity.getMedidor().getNumeroMedidor(),
+                entity.getSocioId(),
+                entity.getFechaAsignacion(),
+                entity.getFechaRetiro(),
+                entity.getEstado(),
+                entity.getObservacion(),
+                entity.getFechaActualizacion(),
+                entity.getMedidor().getMarca(),
+                entity.getMedidor().getModelo(),
+                socio.taxIdentification()
+        );
     }
 
 }

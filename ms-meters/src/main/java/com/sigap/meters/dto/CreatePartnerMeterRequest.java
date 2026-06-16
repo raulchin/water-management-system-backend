@@ -16,6 +16,8 @@ public record CreatePartnerMeterRequest(
         LocalDate fechaAsignacion,
 
         @Size(max = 500, message = "La observación no debe superar los 500 caracteres")
-        String observacion
+        String observacion,
+
+        String estado
 ) {
 }

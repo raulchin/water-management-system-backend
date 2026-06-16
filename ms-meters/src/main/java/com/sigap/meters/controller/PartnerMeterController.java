@@ -1,5 +1,7 @@
 package com.sigap.meters.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sigap.meters.dto.ApiResponse;
 import com.sigap.meters.dto.CreatePartnerMeterRequest;
 import com.sigap.meters.dto.PartnerMeterResponse;
@@ -7,11 +9,13 @@ import com.sigap.meters.dto.UpdatePartnerMeterRequest;
 import com.sigap.meters.service.PartnerMeterService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/v1/medidor-socios")
 @RequiredArgsConstructor
@@ -19,10 +23,13 @@ public class PartnerMeterController {
 
     private final PartnerMeterService partnerMeterService;
 
+    private final ObjectMapper objectMapper;
+
     @PostMapping
     public ResponseEntity<ApiResponse<PartnerMeterResponse>> create(
             @Valid @RequestBody CreatePartnerMeterRequest request
     ) {
+        log.info("Incoming request to create partner meter assignment: {}", toJson(request));
         PartnerMeterResponse response = partnerMeterService.create(request);
 
         return ResponseEntity
@@ -93,5 +100,14 @@ public class PartnerMeterController {
         return ResponseEntity.ok(
                 ApiResponse.success("Asignación retirada correctamente", null)
         );
+    }
+
+    private String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException ex) {
+            log.warn("Could not serialize request body to JSON", ex);
+            return String.valueOf(value);
+        }
     }
 }

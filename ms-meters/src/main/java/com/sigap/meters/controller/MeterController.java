@@ -46,4 +46,15 @@ public class MeterController {
                 ApiResponse.success("Medidores consultados correctamente", response)
         );
     }
+
+    @GetMapping("/number/{meterNumber}")
+    public ResponseEntity<ApiResponse<MeterResponse>> findByMeterNumber(
+            @PathVariable String meterNumber
+    ) {
+        MeterResponse response = meterService.findByMeterNumber(meterNumber);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Medidor consultado correctamente", response)
+        );
+    }
 }

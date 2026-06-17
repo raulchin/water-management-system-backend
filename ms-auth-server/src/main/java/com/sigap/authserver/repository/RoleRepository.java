@@ -3,10 +3,5 @@ package com.sigap.authserver.repository;
 import com.sigap.authserver.infrastructure.entity.RoleEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import java.util.Optional;
-
-public interface RolRepository extends JpaRepository<RoleEntity, Long> {
-
-    Optional<RoleEntity> findByRolNameIgnoreCase(String nameRol);
-
+public interface RoleRepository extends JpaRepository<RoleEntity, Long> {
 }

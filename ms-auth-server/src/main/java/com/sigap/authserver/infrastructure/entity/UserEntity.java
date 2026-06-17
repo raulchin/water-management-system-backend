@@ -49,7 +49,7 @@ public class UserEntity {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<UserRolEntity> usuariosRol = new HashSet<>();
 
-    public void addRol(RolEntity rol) {
+    public void addRol(RoleEntity rol) {
 
         boolean yaExiste = usuariosRol.stream()
                 .map(UserRolEntity::getRol)

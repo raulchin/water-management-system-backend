@@ -25,12 +25,12 @@ public class UserRolEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @MapsId("idRol")
     @JoinColumn(name = "id_rol", nullable = false)
-    private RolEntity rol;
+    private RoleEntity rol;
 
     @Column(name = "fecha_asignacion", nullable = false, updatable = false)
     private LocalDateTime assignmentDate;
 
-    public static UserRolEntity of(UserEntity usuario, RolEntity rol) {
+    public static UserRolEntity of(UserEntity usuario, RoleEntity rol) {
         UserRolEntity entity = new UserRolEntity();
         entity.setId(new UserRolId());
         entity.setUser(usuario);

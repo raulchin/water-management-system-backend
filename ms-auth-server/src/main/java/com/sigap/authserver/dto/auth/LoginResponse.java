@@ -18,6 +18,8 @@ public record LoginResponse(
 
         String nombres,
 
+        Long roleId,
+
         List<String> roles
 ) {
 }

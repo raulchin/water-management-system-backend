@@ -3,7 +3,7 @@ package com.sigap.meters.service.impl;
 import com.sigap.meters.client.PartnerClient;
 import com.sigap.meters.dto.*;
 import com.sigap.meters.entity.MeterEntity;
-import com.sigap.meters.entity.PartnerMeterEntity;
+import com.sigap.meters.entity.MeterAssignmentEntity;
 import com.sigap.meters.exception.BadRequestException;
 import com.sigap.meters.exception.ResourceNotFoundException;
 import com.sigap.meters.repository.MeterRepository;
@@ -74,7 +74,7 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
             throw new BadRequestException("El medidor ya tiene una asignación activa");
         }
 
-        PartnerMeterEntity entity = PartnerMeterEntity.builder()
+        MeterAssignmentEntity entity = MeterAssignmentEntity.builder()
                 .medidor(medidor)
                 .socioId(request.socioId())
                 .fechaAsignacion(
@@ -86,7 +86,7 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
                 .observacion(normalize(request.observacion()))
                 .build();
 
-        PartnerMeterEntity saved = partnerMeterRepository.save(entity);
+        MeterAssignmentEntity saved = partnerMeterRepository.save(entity);
 
         return toResponse(saved);
 
@@ -96,7 +96,7 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
     @Transactional(readOnly = true)
     public PartnerMeterResponse findById(Long asignacionId) {
 
-        PartnerMeterEntity entity = getAssignment(asignacionId);
+        MeterAssignmentEntity entity = getAssignment(asignacionId);
         return toResponse(entity);
 
     }
@@ -106,10 +106,10 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
     public List<PartnerMeterResponse> findAll() {
 
         log.info("Listar todas las asignaciones.");
-        List<PartnerMeterEntity> assignments = partnerMeterRepository.findAll();
+        List<MeterAssignmentEntity> assignments = partnerMeterRepository.findAll();
 
         Map<Long, PartnerResponse> socios = assignments.stream()
-                .map(PartnerMeterEntity::getSocioId)
+                .map(MeterAssignmentEntity::getSocioId)
                 .distinct()
                 .collect(Collectors.toMap(
                         socioId -> socioId,
@@ -146,7 +146,7 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
     @Transactional
     public PartnerMeterResponse update(Long asignacionId, UpdatePartnerMeterRequest request) {
 
-        PartnerMeterEntity entity = getAssignment(asignacionId);
+        MeterAssignmentEntity entity = getAssignment(asignacionId);
 
         if (request.fechaAsignacion() != null) {
             entity.setFechaAsignacion(request.fechaAsignacion());
@@ -170,7 +170,7 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
             entity.setObservacion(normalize(request.observacion()));
         }
 
-        PartnerMeterEntity updated = partnerMeterRepository.save(entity);
+        MeterAssignmentEntity updated = partnerMeterRepository.save(entity);
 
         return toResponse(updated);
     }
@@ -179,7 +179,7 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
     @Transactional
     public void delete(Long asignacionId) {
 
-        PartnerMeterEntity entity = getAssignment(asignacionId);
+        MeterAssignmentEntity entity = getAssignment(asignacionId);
 
         entity.setEstado(ESTADO_RETIRADO);
         entity.setFechaRetiro(LocalDate.now());
@@ -188,14 +188,14 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
 
     }
 
-    private PartnerMeterEntity getAssignment(Long asignacionId) {
+    private MeterAssignmentEntity getAssignment(Long asignacionId) {
         return partnerMeterRepository.findById(asignacionId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No existe la asignación con id: " + asignacionId
                 ));
     }
 
-    private PartnerMeterResponse toResponse(PartnerMeterEntity entity ) {
+    private PartnerMeterResponse toResponse(MeterAssignmentEntity entity ) {
         return new PartnerMeterResponse(
                 entity.getAsignacionId(),
                 entity.getMedidor().getMedidorId(),
@@ -248,7 +248,7 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
         }
     }
 
-    private PartnerMeterResponse toResponseSo(PartnerMeterEntity entity, PartnerResponse socio) {
+    private PartnerMeterResponse toResponseSo(MeterAssignmentEntity entity, PartnerResponse socio) {
         return new PartnerMeterResponse(
                 entity.getAsignacionId(),
                 entity.getMedidor().getMedidorId(),

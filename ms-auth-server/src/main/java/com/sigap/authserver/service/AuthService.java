@@ -4,7 +4,7 @@ import com.sigap.authserver.dto.auth.LoginRequest;
 import com.sigap.authserver.dto.auth.LoginResponse;
 import com.sigap.authserver.dto.auth.RegisterRequest;
 import com.sigap.authserver.helper.JwtHelper;
-import com.sigap.authserver.infrastructure.entity.RolEntity;
+import com.sigap.authserver.infrastructure.entity.RoleEntity;
 import com.sigap.authserver.infrastructure.entity.UserEntity;
 import com.sigap.authserver.repository.RolRepository;
 import com.sigap.authserver.repository.UserRepository;
@@ -41,7 +41,7 @@ public class AuthService {
         log.info("Registrar un usuario...");
 
         validarDuplicados(request.username(), request.email());
-        RolEntity rolEntity = rolRepository.findByRolNameIgnoreCase(request.rol())
+        RoleEntity rolEntity = rolRepository.findByRolNameIgnoreCase(request.rol())
                 .orElseThrow(() -> new IllegalStateException("No existe el rol USER en la base de datos."));
 
         UserEntity user = new UserEntity();
@@ -94,6 +94,7 @@ public class AuthService {
 
     private LoginResponse buildLoginResponse(UserEntity usuario) {
         List<String> roles = extraerRoles(usuario);
+        Long roleId = extraerRoleId(usuario);
         String token = jwtService.generateToken(usuario.getIdUser(), usuario.getUsername(), roles);
         log.info("Token generado correctamente para usuario: {}", usuario.getUsername());
         return new LoginResponse(
@@ -104,6 +105,7 @@ public class AuthService {
                 usuario.getUsername(),
                 usuario.getEmail(),
                 usuario.getNames(),
+                roleId,
                 roles
         );
     }
@@ -124,5 +126,12 @@ public class AuthService {
             usuario.setBlocked(Boolean.TRUE);
         }
         userRepository.save(usuario);
+    }
+
+    private Long extraerRoleId(UserEntity userEntity) {
+        return userEntity.getUsuariosRol().stream()
+                .map(usuarioRol -> usuarioRol.getRol().getIdRol())
+                .findFirst()
+                .orElse(null);
     }
 }

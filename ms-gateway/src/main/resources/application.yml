@@ -23,6 +23,11 @@ spring:
               predicates:
                 - Path=/ms-meters/**
 
+            - id: ms-readings
+              uri: lb://MS-READINGS
+              predicates:
+                - Path=/ms-readings/**
+
 server:
   port: 4040
 

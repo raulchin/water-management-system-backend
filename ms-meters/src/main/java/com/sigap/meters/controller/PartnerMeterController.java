@@ -41,6 +41,7 @@ public class PartnerMeterController {
     public ResponseEntity<ApiResponse<PartnerMeterResponse>> findById(
             @PathVariable Long asignacionId
     ) {
+        log.info("Asignacion a consultar: {}", asignacionId);
         PartnerMeterResponse response = partnerMeterService.findById(asignacionId);
 
         return ResponseEntity.ok(

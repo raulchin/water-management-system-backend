@@ -97,6 +97,7 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
     public PartnerMeterResponse findById(Long asignacionId) {
 
         MeterAssignmentEntity entity = getAssignment(asignacionId);
+        log.info("Entidad asignada: {}", entity);
         return toResponse(entity);
 
     }
@@ -195,7 +196,10 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
                 ));
     }
 
+
     private PartnerMeterResponse toResponse(MeterAssignmentEntity entity ) {
+
+        PartnerResponse socio = findPartner(entity.getSocioId());
         return new PartnerMeterResponse(
                 entity.getAsignacionId(),
                 entity.getMedidor().getMedidorId(),
@@ -208,7 +212,7 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
                 entity.getFechaActualizacion(),
                 entity.getMedidor().getMarca(),
                 entity.getMedidor().getModelo(),
-                ""
+                socio.taxIdentification()
         );
     }
 

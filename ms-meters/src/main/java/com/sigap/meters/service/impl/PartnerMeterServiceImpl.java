@@ -189,6 +189,69 @@ public class PartnerMeterServiceImpl implements PartnerMeterService {
 
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public PartnerAssignmentsResponse findByPartnerIdentification(String identification) {
+        String normalizedIdentification = normalize(identification);
+
+        // Consulta ms-partner una sola vez para obtener los datos del socio.
+        PartnerResponse socio = findPartnerByIdentification(normalizedIdentification);
+
+        // Busca las asignaciones locales usando el id real del socio.
+        List<MeterAssignmentSummaryResponse> asignaciones = partnerMeterRepository.findBySocioId(socio.idPartner())
+                .stream()
+                .map(this::toMeterAssignmentSummary)
+                .toList();
+
+        return new PartnerAssignmentsResponse(
+                toPartnerSummary(socio),
+                asignaciones
+        );
+    }
+
+    private PartnerSummaryResponse toPartnerSummary(PartnerResponse socio) {
+        String nombreSocio = (socio.names() + " " + socio.lastName()).trim();
+
+        return new PartnerSummaryResponse(
+                socio.idPartner(),
+                socio.taxIdentification(),
+                nombreSocio,
+                socio.email()
+        );
+    }
+
+    private MeterAssignmentSummaryResponse toMeterAssignmentSummary(MeterAssignmentEntity entity) {
+        return new MeterAssignmentSummaryResponse(
+                entity.getAsignacionId(),
+                entity.getMedidor().getMedidorId(),
+                entity.getMedidor().getNumeroMedidor(),
+                entity.getMedidor().getMarca(),
+                entity.getMedidor().getModelo(),
+                entity.getEstado()
+        );
+    }
+
+    private PartnerResponse findPartnerByIdentification(String identification) {
+        try {
+            PartnerApiResponse<PartnerResponse> response =
+                    partnerClient.findByTaxIdentification(identification);
+
+            if (response == null || response.data() == null) {
+                throw new ResourceNotFoundException(
+                        "No existe un socio con identificacion: " + identification
+                );
+            }
+
+            return response.data();
+
+        } catch (FeignException.NotFound ex) {
+            throw new ResourceNotFoundException(
+                    "No existe un socio con identificacion: " + identification
+            );
+        }
+    }
+
+
     private MeterAssignmentEntity getAssignment(Long asignacionId) {
         return partnerMeterRepository.findById(asignacionId)
                 .orElseThrow(() -> new ResourceNotFoundException(

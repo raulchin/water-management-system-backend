@@ -8,15 +8,15 @@ spring:
   profiles:
     default: default
   config:
-    import: "optional:configserver:http://localhost:7777"
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:7777}
   datasource:
-    url: ${spring.datasource.url}
-    username: ${spring.datasource.username}
-    password: ${spring.datasource.password}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5436/db-meters}
+    username: ${SPRING_DATASOURCE_USERNAME:userAdminSigap}
+    password: ${SPRING_DATASOURCE_PASSWORD:user_admin_sigap2026}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: ${spring.datasource.hikari.maximum-pool-size}
-      connection-timeout: ${spring.datasource.hikari.connection-timeout}
+      maximum-pool-size: ${MAXIMUM_POOL_SIZE:5}
+      connection-timeout: ${CONNECTION_TIMEOUT:20000}
   jpa:
     hibernate:
       ddl-auto: update  # Crea/Actualiza las tablas automaticamente a partir de las entidades

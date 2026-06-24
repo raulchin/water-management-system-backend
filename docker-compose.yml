@@ -1,0 +1,171 @@
+services:
+  ms-eureka:
+    container_name: ms-eureka
+    build: ./ms-registry-server
+    image: ms-eureka:1.0.0
+    ports:
+      - "8761:8761"
+    networks:
+      - sigap-network
+
+  ms-config:
+    container_name: ms-config
+    build: ./ms-config-server
+    image: ms-config:1.0.0
+    ports:
+      - "7777:7777"
+    depends_on:
+      - ms-eureka
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://ms-eureka:8761/eureka/
+    networks:
+      - sigap-network
+
+  ms-gateway:
+    container_name: ms-gateway
+    build: ./ms-gateway
+    image: ms-gateway:1.0.0
+    ports:
+      - "4040:4040"
+    depends_on:
+      - ms-eureka
+      - ms-config
+    environment:
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://ms-eureka:8761/eureka/
+    networks:
+      - sigap-network
+
+  ms-auth-server:
+    container_name: ms-auth-server
+    build: ./ms-auth-server
+    image: ms-auth-server:1.0.0
+    ports:
+      - "8890:8890"
+    depends_on:
+      - ms-eureka
+      - ms-config
+      - db-user
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://ms-config:7777
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://ms-eureka:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-user:5432/db-users
+      SPRING_DATASOURCE_USERNAME: userAdminSigap
+      SPRING_DATASOURCE_PASSWORD: user_admin_sigap2026
+    networks:
+      - sigap-network
+
+  ms-partner:
+    container_name: ms-partner
+    build: ./ms-partner
+    image: ms-partner:1.0.0
+    ports:
+      - "4041:4041"
+    depends_on:
+      - ms-eureka
+      - ms-config
+      - db-socios
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://ms-config:7777
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://ms-eureka:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-socios:5432/db_socios
+      SPRING_DATASOURCE_USERNAME: userSociosSigap
+      SPRING_DATASOURCE_PASSWORD: systemSociosSigap2026
+      MAXIMUM_POOL_SIZE: 5
+      CONNECTION_TIMEOUT: 20000
+    networks:
+      - sigap-network
+
+  ms-meters:
+    container_name: ms-meters
+    build: ./ms-meters
+    image: ms-meters:1.0.0
+    ports:
+      - "4043:4043"
+    depends_on:
+      - ms-eureka
+      - ms-config
+      - db-meters
+    environment:
+      SPRING_CONFIG_IMPORT: optional:configserver:http://ms-config:7777
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://ms-eureka:8761/eureka/
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db-meters:5432/db-meters
+      SPRING_DATASOURCE_USERNAME: userAdminSigap
+      SPRING_DATASOURCE_PASSWORD: user_admin_sigap2026
+      MAXIMUM_POOL_SIZE: 5
+      CONNECTION_TIMEOUT: 20000
+    networks:
+      - sigap-network
+
+  db-socios:
+    image: postgres:18.1
+    container_name: db-socios
+    restart: always
+    volumes:
+      - db_socios_data:/var/lib/postgresql
+      - ./sql/create_schema.sql:/docker-entrypoint-initdb.d/create_schema.sql
+    environment:
+      POSTGRES_DB: 'db_socios'
+      POSTGRES_USER: 'userSociosSigap'
+      POSTGRES_PASSWORD: 'systemSociosSigap2026'
+    ports:
+      - '5434:5432' # Tu PC usara el 5434, el contenedor usa su 5432 original
+    networks:
+    - sigap-network
+
+  db-user:
+    image: postgres:18.1
+    container_name: db-users
+    restart: always
+    volumes:
+      - db_users_data:/var/lib/postgresql
+      - ./sql/create_schema_auth.sql:/docker-entrypoint-initdb.d/create_schema_auth.sql
+    environment:
+      POSTGRES_DB: 'db-users'
+      POSTGRES_USER: 'userAdminSigap'
+      POSTGRES_PASSWORD: 'user_admin_sigap2026'
+    ports:
+      - '5435:5432'
+    networks:
+    - sigap-network
+
+  db-meters:
+    image: postgres:18.1
+    container_name: db-meters
+    restart: always
+    volumes:
+      - db_meters_data:/var/lib/postgresql
+      - ./sql/create_schema_meters.sql:/docker-entrypoint-initdb.d/create_schema_meters.sql
+    environment:
+      POSTGRES_DB: 'db-meters'
+      POSTGRES_USER: 'userAdminSigap'
+      POSTGRES_PASSWORD: 'user_admin_sigap2026'
+    ports:
+      - '5436:5432'
+    networks:
+    - sigap-network
+
+  db-readings:
+    image: postgres:18.1
+    container_name: db-readings
+    restart: always
+    volumes:
+      - db_readings_data:/var/lib/postgresql
+      - ./sql/create_schema_readings.sql:/docker-entrypoint-initdb.d/create_schema_readings.sql
+    environment:
+      POSTGRES_DB: 'db-readings'
+      POSTGRES_USER: 'userAdminSigap'
+      POSTGRES_PASSWORD: 'user_admin_sigap2026'
+    ports:
+      - '5437:5432'
+    networks:
+    - sigap-network
+
+networks:
+  sigap-network:
+    driver: bridge
+
+volumes:
+  db_socios_data:
+  db_users_data:
+  db_meters_data:
+  db_readings_data:

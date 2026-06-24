@@ -7,15 +7,15 @@ spring:
   profiles:
    default: default
   config:
-    import: "optional:configserver:http://localhost:7777"
+    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:7777}
   datasource:
-    url: ${spring.datasource.url}
-    username: ${spring.datasource.username}
-    password: ${spring.datasource.password}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5437/db-readings}
+    username: ${SPRING_DATASOURCE_USERNAME:userAdminSigap}
+    password: ${SPRING_DATASOURCE_PASSWORD:user_admin_sigap2026}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: ${spring.datasource.hikari.maximum-pool-size}
-      connection-timeout: ${spring.datasource.hikari.connection-timeout}
+      maximum-pool-size: ${MAXIMUM_POOL_SIZE:5}
+      connection-timeout: ${CONNECTION_TIMEOUT:20000}
   jpa:
     hibernate:
       ddl-auto: update  # Crea/Actualiza las tablas automaticamente a partir de las entidades
@@ -34,6 +34,10 @@ eureka:
     instance-id: "${spring.application.name}:${random.value}"
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true
+
+clients:
+  ms-meters:
+    url: http://localhost:4043

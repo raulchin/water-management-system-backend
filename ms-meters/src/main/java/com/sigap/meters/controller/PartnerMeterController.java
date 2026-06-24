@@ -2,10 +2,7 @@ package com.sigap.meters.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sigap.meters.dto.ApiResponse;
-import com.sigap.meters.dto.CreatePartnerMeterRequest;
-import com.sigap.meters.dto.PartnerMeterResponse;
-import com.sigap.meters.dto.UpdatePartnerMeterRequest;
+import com.sigap.meters.dto.*;
 import com.sigap.meters.service.PartnerMeterService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -100,6 +97,18 @@ public class PartnerMeterController {
 
         return ResponseEntity.ok(
                 ApiResponse.success("Asignación retirada correctamente", null)
+        );
+    }
+
+    @GetMapping("/identificacion/{identificacion}")
+    public ResponseEntity<ApiResponse<PartnerAssignmentsResponse>> findByIdentification(
+            @PathVariable String identificacion
+    ) {
+        PartnerAssignmentsResponse response =
+                partnerMeterService.findByPartnerIdentification(identificacion);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Asignaciones del socio consultadas correctamente", response)
         );
     }
 

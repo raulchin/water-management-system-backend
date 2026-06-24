@@ -6,7 +6,10 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "ms-meters")
+@FeignClient(
+        name = "ms-meters",
+        url = "${clients.ms-meters.url}"
+)
 public interface MeterClient {
 
     @GetMapping("/ms-meters/api/v1/medidor-socios/{assignmentId}")

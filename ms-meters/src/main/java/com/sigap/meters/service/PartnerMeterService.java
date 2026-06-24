@@ -1,8 +1,6 @@
 package com.sigap.meters.service;
 
-import com.sigap.meters.dto.CreatePartnerMeterRequest;
-import com.sigap.meters.dto.PartnerMeterResponse;
-import com.sigap.meters.dto.UpdatePartnerMeterRequest;
+import com.sigap.meters.dto.*;
 
 import java.util.List;
 
@@ -22,4 +20,6 @@ public interface PartnerMeterService {
     PartnerMeterResponse update(Long asignacionId, UpdatePartnerMeterRequest request);
 
     void delete(Long asignacionId);
+
+    PartnerAssignmentsResponse findByPartnerIdentification(String identification);
 }

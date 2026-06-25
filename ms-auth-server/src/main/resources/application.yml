@@ -3,8 +3,6 @@ spring:
     default: default
   application:
     name: ms-auth-server
-  config:
-    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:7777}
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5435/db-users}
     username: ${SPRING_DATASOURCE_USERNAME:userAdminSigap}

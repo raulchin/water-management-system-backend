@@ -3,6 +3,12 @@ spring:
     default: default
   application:
     name: ms-auth-server
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
+
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5435/db-users}
     username: ${SPRING_DATASOURCE_USERNAME:userAdminSigap}

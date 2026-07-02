@@ -1,25 +1,26 @@
 spring:
+  profiles:
+    default: default
   application:
-    name: ms-readings
+    name: ms-billing
   threads:
     virtual:
       enabled: true
-  profiles:
-   default: default
-  config:
-    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:7777}
+
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5437/db-readings}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5438/db-billing}
     username: ${SPRING_DATASOURCE_USERNAME:userAdminSigap}
     password: ${SPRING_DATASOURCE_PASSWORD:user_admin_sigap2026}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: ${MAXIMUM_POOL_SIZE:10}
       connection-timeout: ${CONNECTION_TIMEOUT:20000}
+
   jpa:
     hibernate:
-      ddl-auto: update  # Crea/Actualiza las tablas automaticamente a partir de las entidades
-    show-sql: true      # Permite mostrar las consultas en la consola
+      ddl-auto: update
+    show-sql: true
+
   cloud:
     openfeign:
       client:
@@ -27,14 +28,16 @@ spring:
           ms-meters:
             connectTimeout: 2000
             readTimeout: 5000
+
 server:
-  port: 4044
+  port: 4045
   servlet:
-    context-path: /ms-readings
+    context-path: /ms-billing
 
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{traceId}] - %msg%n"
+
 
 eureka:
   instance:
@@ -46,5 +49,5 @@ eureka:
     fetch-registry: true
 
 clients:
-  ms-meters:
-    url: http://localhost:4043
+  ms-readings:
+    url: ${MS_READINGS_URL:http://localhost:4044}

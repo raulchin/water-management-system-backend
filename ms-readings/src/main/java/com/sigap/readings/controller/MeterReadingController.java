@@ -1,9 +1,6 @@
 package com.sigap.readings.controller;
 
-import com.sigap.readings.dto.ApiResponse;
-import com.sigap.readings.dto.CreateMeterReadingRequest;
-import com.sigap.readings.dto.MeterReadingResponse;
-import com.sigap.readings.dto.UpdateMeterReadingRequest;
+import com.sigap.readings.dto.*;
 import com.sigap.readings.service.MeterReadingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -79,4 +76,25 @@ public class MeterReadingController {
                 ApiResponse.success("Lectura de medidor eliminada correctamente", null)
         );
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<MeterReadingSearchResponse>>> search(
+            @RequestParam(required = false) String identification,
+            @RequestParam(required = false) String meterNumber,
+            @RequestParam String period
+    ) {
+        log.info("Buscar lecturas de los medidores...");
+        List<MeterReadingSearchResponse> response =
+                meterReadingService.searchByIdentificationOrMeterNumber(
+                        identification,
+                        meterNumber,
+                        period
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Lecturas consultadas correctamente", response)
+        );
+    }
+
+
 }

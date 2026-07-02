@@ -160,6 +160,22 @@ services:
     networks:
     - sigap-network
 
+  db-billing:
+    image: postgres:18.1
+    container_name: db-billing
+    restart: always
+    volumes:
+      - db_billing_data:/var/lib/postgresql
+      - ./sql/create_schema_billing.sql:/docker-entrypoint-initdb.d/create_schema_billing.sql
+    environment:
+      POSTGRES_DB: 'db-billing'
+      POSTGRES_USER: 'userAdminSigap'
+      POSTGRES_PASSWORD: 'user_admin_sigap2026'
+    ports:
+      - '5438:5432'
+    networks:
+    - sigap-network
+
 networks:
   sigap-network:
     driver: bridge
@@ -169,3 +185,4 @@ volumes:
   db_users_data:
   db_meters_data:
   db_readings_data:
+  db_billing_data:

@@ -125,6 +125,146 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         meterReadingRepository.delete(findReading(readingId));
     }
 
+    @Override
+    public List<MeterReadingSearchResponse> searchByIdentificationOrMeterNumber(String identification, String meterNumber, String period) {
+
+        String normalizedPeriod = normalize(period);
+        String normalizedIdentification = normalize(identification);
+        String normalizedMeterNumber = normalize(meterNumber);
+
+        validateSearchCriteria(normalizedIdentification, normalizedMeterNumber, normalizedPeriod);
+
+        if (normalizedIdentification != null) {
+            return searchByIdentification(normalizedIdentification, normalizedPeriod);
+        }
+
+        return searchByMeterNumber(normalizedMeterNumber, normalizedPeriod);
+    }
+
+    private void validateSearchCriteria(String identification, String meterNumber, String period) {
+        if (period == null || period.isBlank()) {
+            throw new BadRequestException("El periodo es obligatorio");
+        }
+
+        boolean hasIdentification = identification != null && !identification.isBlank();
+        boolean hasMeterNumber = meterNumber != null && !meterNumber.isBlank();
+
+        if (hasIdentification == hasMeterNumber) {
+            throw new BadRequestException("Debe enviar identification o meterNumber, pero no ambos");
+        }
+    }
+
+    private List<MeterReadingSearchResponse> searchByIdentification(String identification, String period) {
+
+        log.info("Buscar lecuras de medidores del socio: {}", identification);
+        ApiResponse<PartnerAssignmentsResponse> response =
+                meterClient.findAssignmentsByIdentification(identification);
+
+        if (response == null || response.data() == null) {
+            throw new ResourceNotFoundException("No existe socio con identificacion: " + identification);
+        }
+
+        PartnerAssignmentsResponse partnerAssignments = response.data();
+
+        List<Long> assignmentIds = partnerAssignments.asignaciones()
+                .stream()
+                .map(MeterAssignmentSummaryResponse::asignacionId)
+                .toList();
+
+        if (assignmentIds.isEmpty()) {
+            return List.of();
+        }
+
+        List<MeterReadingEntity> readings =
+                meterReadingRepository.findByAssignmentIdInAndPeriod(assignmentIds, period);
+
+        Map<Long, MeterAssignmentSummaryResponse> assignmentsById = partnerAssignments.asignaciones()
+                .stream()
+                .collect(Collectors.toMap(
+                        MeterAssignmentSummaryResponse::asignacionId,
+                        assignment -> assignment
+                ));
+
+        return readings.stream()
+                .map(reading -> toSearchResponse(
+                        reading,
+                        partnerAssignments.socio(),
+                        assignmentsById.get(reading.getAssignmentId())
+                ))
+                .toList();
+    }
+
+    private List<MeterReadingSearchResponse> searchByMeterNumber(String meterNumber, String period) {
+
+        log.info("Busqueda de lecturas segun el numero de medidor: {}", meterNumber);
+        ApiResponse<MeterResponse> response = meterClient.findMeterByNumber(meterNumber);
+
+        if (response == null || response.data() == null) {
+            throw new ResourceNotFoundException("No existe medidor con numero: " + meterNumber);
+        }
+
+        MeterResponse meter = response.data();
+
+        MeterReadingEntity reading = meterReadingRepository.findByMeterIdAndPeriod(meter.medidorId(), period)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe lectura para el medidor " + meterNumber + " en el periodo " + period
+                ));
+
+        PartnerMeterResponse assignment = findAssignment(reading.getAssignmentId());
+
+        PartnerSummaryResponse partner = new PartnerSummaryResponse(
+                assignment.socioId(),
+                assignment.identificacionSocio(),
+                null,
+                null
+        );
+
+        MeterAssignmentSummaryResponse assignmentSummary = new MeterAssignmentSummaryResponse(
+                assignment.asignacionId(),
+                assignment.medidorId(),
+                assignment.numeroMedidor(),
+                assignment.marcaMedidor(),
+                assignment.modeloMedidor(),
+                assignment.estado()
+        );
+
+        return List.of(toSearchResponse(reading, partner, assignmentSummary));
+    }
+
+
+    private MeterReadingSearchResponse toSearchResponse(
+            MeterReadingEntity reading,
+            PartnerSummaryResponse partner,
+            MeterAssignmentSummaryResponse assignment
+    ) {
+        log.info("Construir la respuesta de lecturas...");
+        return new MeterReadingSearchResponse(
+                new MeterReadingSearchResponse.PartnerInfo(
+                        partner.socioId(),
+                        partner.identificacionSocio(),
+                        partner.nombreSocio(),
+                        partner.email()
+                ),
+                new MeterReadingSearchResponse.MeterInfo(
+                        assignment.medidorId(),
+                        assignment.asignacionId(),
+                        assignment.numeroMedidor(),
+                        assignment.marcaMedidor(),
+                        assignment.modeloMedidor()
+                ),
+                new MeterReadingSearchResponse.ReadingInfo(
+                        reading.getReadingId(),
+                        reading.getPeriod(),
+                        reading.getReadingDate(),
+                        reading.getPreviousReading(),
+                        reading.getCurrentReading(),
+                        reading.getCalculatedConsumption(),
+                        reading.getStatus().name(),
+                        reading.getObservation()
+                )
+        );
+    }
+
     private MeterReadingEntity findReading(Long readingId) {
         return meterReadingRepository.findById(readingId)
                 .orElseThrow(() -> new ResourceNotFoundException("Lectura de medidor no encontrada con id " + readingId));

@@ -36,4 +36,3 @@ CREATE INDEX IF NOT EXISTS idx_asignacion_medidor_id ON medidor_socios(medidor_i
 
 CREATE UNIQUE INDEX IF NOT EXISTS uk_medidor_asignacion_activa ON medidor_socios(medidor_id) WHERE estado = 'ACTIVO';
 
-

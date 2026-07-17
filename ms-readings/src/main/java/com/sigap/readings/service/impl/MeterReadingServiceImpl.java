@@ -4,6 +4,7 @@ import com.sigap.readings.client.MeterClient;
 import com.sigap.readings.dto.*;
 import com.sigap.readings.entity.MeterReadingEntity;
 import com.sigap.readings.enums.MeterReadingStatus;
+import com.sigap.readings.event.MeterReadingCreatedEvent;
 import com.sigap.readings.exception.BadRequestException;
 import com.sigap.readings.exception.DuplicateResourceException;
 import com.sigap.readings.exception.ResourceNotFoundException;
@@ -12,6 +13,7 @@ import com.sigap.readings.service.MeterReadingService;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,15 +33,28 @@ public class MeterReadingServiceImpl implements MeterReadingService {
 
     private final MeterClient meterClient;
 
+    private final ApplicationEventPublisher eventPublisher;
+
     @Override
     @Transactional
     public MeterReadingResponse create(CreateMeterReadingRequest request) {
 
         String period = normalize(request.period());
-        validateAssignment(request);
+        PartnerMeterResponse assignment = validateAssignment(request);
         validateReadingValues(request.previousReading(), request.currentReading());
         validatePeriodAvailability(request.meterId(), period, null);
 
+        MeterReadingEntity entity = getMeterReadingEntity(request, period);
+
+        MeterReadingEntity saved = meterReadingRepository.save(entity);
+
+        eventPublisher.publishEvent(new MeterReadingCreatedEvent(saved, assignment));
+
+        return toResponse(saved);
+
+    }
+
+    private MeterReadingEntity getMeterReadingEntity(CreateMeterReadingRequest request, String period) {
         MeterReadingEntity entity = new MeterReadingEntity();
         entity.setMeterId(request.meterId());
         entity.setAssignmentId(request.assignmentId());
@@ -50,8 +65,7 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         entity.setCurrentReading(request.currentReading());
         entity.setStatus(request.status() == null ? MeterReadingStatus.REGISTRADA : request.status());
         entity.setObservation(normalize(request.observation()));
-
-        return toResponse(meterReadingRepository.save(entity));
+        return entity;
     }
 
     @Override

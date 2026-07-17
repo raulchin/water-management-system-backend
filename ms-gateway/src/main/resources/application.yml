@@ -28,6 +28,11 @@ spring:
               predicates:
                 - Path=/ms-readings/**
 
+            - id: ms-billing
+              uri: lb://MS-BILLING
+              predicates:
+                - Path=/ms-billing/**
+
 server:
   port: 4040
 

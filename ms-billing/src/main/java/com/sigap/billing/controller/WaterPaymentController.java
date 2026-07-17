@@ -1,0 +1,72 @@
+package com.sigap.billing.controller;
+
+
+import com.sigap.billing.dto.*;
+import com.sigap.billing.service.WaterPaymentService;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/v1/cobros")
+@RequiredArgsConstructor
+@Slf4j
+public class WaterPaymentController {
+
+    private final WaterPaymentService waterPaymentService;
+
+    @PostMapping
+    public ResponseEntity<ApiResponse<WaterPaymentResponse>> create(
+            @Valid @RequestBody CreateWaterPaymentRequest request
+    ) {
+        log.info("Registrar cobro de factura. billId={}", request.billId());
+
+        return ResponseEntity.status(201)
+                .body(ApiResponse.success(
+                        "Cobro registrado correctamente",
+                        waterPaymentService.create(request)
+                ));
+    }
+
+    @PostMapping("/batch")
+    public ResponseEntity<ApiResponse<BatchWaterPaymentResponse>> createBatch(
+            @Valid @RequestBody CreateBatchWaterPaymentRequest request
+    ) {
+        log.info("Registrar cobro de factura Batch.");
+
+        return ResponseEntity.status(201)
+                .body(ApiResponse.success(
+                        "Cobro registrado correctamente",
+                        waterPaymentService.createBatch(request)
+                ));
+    }
+
+    @GetMapping("/factura/{billId}")
+    public ResponseEntity<ApiResponse<List<WaterPaymentResponse>>> findByBillId(
+            @PathVariable Long billId
+    ) {
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Cobros de la factura consultados correctamente",
+                        waterPaymentService.findByBillId(billId)
+                )
+        );
+    }
+
+    @GetMapping("/latest")
+    public ResponseEntity<ApiResponse<List<WaterPaymentResponse>>> findLast10() {
+        log.info("Consultar los 10 ultimos cobros registrados.");
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Ultimos cobros consultados correctamente",
+                        waterPaymentService.findLast10()
+                )
+        );
+    }
+
+}

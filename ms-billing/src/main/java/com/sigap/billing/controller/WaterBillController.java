@@ -1,9 +1,6 @@
 package com.sigap.billing.controller;
 
-import com.sigap.billing.dto.ApiResponse;
-import com.sigap.billing.dto.CreateWaterBillRequest;
-import com.sigap.billing.dto.UpdateWaterBillRequest;
-import com.sigap.billing.dto.WaterBillResponse;
+import com.sigap.billing.dto.*;
 import com.sigap.billing.service.WaterBillService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -25,8 +22,22 @@ public class WaterBillController {
     public ResponseEntity<ApiResponse<WaterBillResponse>> create(
             @Valid @RequestBody CreateWaterBillRequest request
     ) {
+        log.info("Crear nueva factura para el Socio={}",request.partnerIdentification());
         return ResponseEntity.status(201)
                 .body(ApiResponse.success("Factura generada correctamente", waterBillService.create(request)));
+    }
+
+    @PostMapping("/from-reading")
+    public ResponseEntity<ApiResponse<WaterBillResponse>> createFromReading(
+            @Valid @RequestBody CreateWaterBillFromReadingRequest request
+    ) {
+        log.info("Crear factura automaticamente desde lectura={}", request.readingId());
+
+        return ResponseEntity.status(201)
+                .body(ApiResponse.success(
+                        "Factura generada automaticamente desde lectura",
+                        waterBillService.createFromReading(request)
+                ));
     }
 
     @GetMapping("/{billId}")
@@ -94,4 +105,18 @@ public class WaterBillController {
                 ApiResponse.success("Factura anulada correctamente", null)
         );
     }
+
+    @GetMapping("/latest")
+    public ResponseEntity<ApiResponse<List<WaterBillResponse>>> findLast10() {
+        log.info("Consultar las 10 ultimas facturas registradas.");
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Ultimas facturas consultadas correctamente",
+                        waterBillService.findLast10()
+                )
+        );
+    }
+
+
 }

@@ -1,6 +1,7 @@
 package com.sigap.billing.service.impl;
 
 import com.sigap.billing.client.ReadingClient;
+import com.sigap.billing.config.BillingProperties;
 import com.sigap.billing.dto.*;
 import com.sigap.billing.entity.WaterBillEntity;
 import com.sigap.billing.enums.WaterBillStatus;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -25,8 +27,10 @@ import java.util.List;
 public class WaterBillServiceImpl implements WaterBillService {
 
     private final WaterBillRepository waterBillRepository;
+
     private final ReadingClient readingClient;
 
+    private final BillingProperties billingProperties;
 
     @Override
     @Transactional
@@ -67,6 +71,55 @@ public class WaterBillServiceImpl implements WaterBillService {
                 .partnerIdentification(request.partnerIdentification())
                 .build();
         log.info("Factura creada con exito.");
+        return toResponse(waterBillRepository.save(entity));
+    }
+
+    @Override
+    @Transactional
+    public WaterBillResponse createFromReading(CreateWaterBillFromReadingRequest request) {
+
+        log.info(
+                "Creando factura automaticamente desde lectura. readingId={}, meterId={}, period={}",
+                request.readingId(),
+                request.meterId(),
+                request.period()
+        );
+
+        if (waterBillRepository.existsByReadingId(request.readingId())) {
+            log.warn("Ya existe una factura para la lectura {}", request.readingId());
+            throw new DuplicateResourceException("Ya existe una factura para la lectura " + request.readingId());
+        }
+
+        if (waterBillRepository.existsByMeterIdAndPeriod(request.meterId(), request.period())) {
+            throw new DuplicateResourceException("Ya existe una factura para el medidor y periodo indicados");
+        }
+
+        BigDecimal baseFee = defaultZero(billingProperties.getBaseFee());
+        BigDecimal consumptionAmount = request.calculatedConsumption()
+                .multiply(defaultZero(billingProperties.getConsumptionUnitPrice()));
+
+        LocalDate dueDate = LocalDate.now().plusDays(billingProperties.getDueDays());
+
+        WaterBillEntity entity = WaterBillEntity.builder()
+                .readingId(request.readingId())
+                .meterId(request.meterId())
+                .assignmentId(request.assignmentId())
+                .partnerId(request.partnerId())
+                .period(normalize(request.period()))
+                .partnerIdentification(normalize(request.partnerIdentification()))
+                .partnerName(normalize(request.partnerName()))
+                .meterNumber(normalize(request.meterNumber()))
+                .calculatedConsumption(request.calculatedConsumption())
+                .baseFee(baseFee)
+                .consumptionAmount(consumptionAmount)
+                .penaltyAmount(BigDecimal.ZERO)
+                .discountAmount(BigDecimal.ZERO)
+                .paidAmount(BigDecimal.ZERO)
+                .dueDate(dueDate)
+                .status(WaterBillStatus.PENDIENTE)
+                .observation(normalize(request.observation()))
+                .build();
+
         return toResponse(waterBillRepository.save(entity));
     }
 
@@ -149,6 +202,18 @@ public class WaterBillServiceImpl implements WaterBillService {
 
         entity.setStatus(WaterBillStatus.ANULADA);
         waterBillRepository.save(entity);
+    }
+
+    @Override
+    public List<WaterBillResponse> findLast10() {
+
+        log.info("Consultando las 10 últimas facturas registradas.");
+
+        return waterBillRepository.findTop10ByOrderByCreationDateDesc()
+                .stream()
+                .map(this::toResponse)
+                .toList();
+
     }
 
     private MeterReadingResponse findReading(Long readingId) {

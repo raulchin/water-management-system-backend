@@ -27,6 +27,9 @@ spring:
           ms-meters:
             connectTimeout: 2000
             readTimeout: 5000
+          ms-billing:
+            connectTimeout: 2000
+            readTimeout: 5000
 server:
   port: 4044
   servlet:
@@ -47,4 +50,6 @@ eureka:
 
 clients:
   ms-meters:
-    url: http://localhost:4043
+    url: ${MS_METERS_URL:http://localhost:4043}
+  ms-billing:
+    url: ${MS_BILLING_URL:http://localhost:4045}

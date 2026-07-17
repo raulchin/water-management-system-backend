@@ -51,3 +51,8 @@ eureka:
 clients:
   ms-readings:
     url: ${MS_READINGS_URL:http://localhost:4044}
+
+billing:
+  base-fee: ${BILLING_BASE_FEE:2.00}
+  consumption-unit-price: ${BILLING_CONSUMPTION_UNIT_PRICE:0.50}
+  due-days: ${BILLING_DUE_DAYS:15}

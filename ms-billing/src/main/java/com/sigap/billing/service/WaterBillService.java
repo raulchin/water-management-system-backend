@@ -1,5 +1,6 @@
 package com.sigap.billing.service;
 
+import com.sigap.billing.dto.CreateWaterBillFromReadingRequest;
 import com.sigap.billing.dto.CreateWaterBillRequest;
 import com.sigap.billing.dto.UpdateWaterBillRequest;
 import com.sigap.billing.dto.WaterBillResponse;
@@ -9,6 +10,8 @@ import java.util.List;
 public interface WaterBillService {
 
     WaterBillResponse create(CreateWaterBillRequest request);
+
+    WaterBillResponse createFromReading(CreateWaterBillFromReadingRequest request);
 
     WaterBillResponse findById(Long billId);
 
@@ -21,4 +24,6 @@ public interface WaterBillService {
     WaterBillResponse update(Long billId, UpdateWaterBillRequest request);
 
     void cancel(Long billId);
+
+    List<WaterBillResponse> findLast10();
 }

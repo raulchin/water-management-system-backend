@@ -18,9 +18,11 @@ spring:
       ddl-auto: update
     show-sql: true
 server:
+  port: ${PORT:8890}
+  address: 0.0.0.0
   servlet:
     context-path: /ms-auth-server
-  port: 8890
+
 
 app:
   jwt:
@@ -30,7 +32,17 @@ app:
 
 eureka:
   instance:
-    instance-id: "${spring.application.name}:${random.value}"
+    # Dominio privado que Railway asigna a este servicio
+    hostname: ${RAILWAY_PRIVATE_DOMAIN:localhost}
+
+    # No registrar el hostname aleatorio ni una IP temporal
+    prefer-ip-address: false
+
+    # Puerto interno real de ms-auth-server
+    non-secure-port: ${PORT:8890}
+    non-secure-port-enabled: true
+    secure-port-enabled: false
+    instance-id: ${spring.application.name}:${RAILWAY_REPLICA_ID:${random.value}}
   client:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}

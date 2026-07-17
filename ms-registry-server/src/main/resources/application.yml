@@ -2,7 +2,8 @@ spring:
   application:
     name: registry-server
 server:
-  port: 8761
+  port: ${PORT:8761}
+  address: ${SERVER_ADDRESS:0.0.0.0}
 eureka:
   client:
     register-with-eureka: false

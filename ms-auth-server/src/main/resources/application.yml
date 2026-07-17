@@ -10,9 +10,9 @@ spring:
         enabled: false
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5435/db-users}
-    username: ${SPRING_DATASOURCE_USERNAME:userAdminSigap}
-    password: ${SPRING_DATASOURCE_PASSWORD:user_admin_sigap2026}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: update

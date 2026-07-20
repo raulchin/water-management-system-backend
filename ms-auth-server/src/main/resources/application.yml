@@ -13,7 +13,13 @@ spring:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${MAXIMUM_POOL_SIZE}
+      connection-timeout: ${CONNECTION_TIMEOUT}
+      minimum-idle: ${MINIMUM_IDLE}
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: update
     show-sql: true

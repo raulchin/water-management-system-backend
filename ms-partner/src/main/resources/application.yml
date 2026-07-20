@@ -18,7 +18,9 @@ spring:
     hikari:
       maximum-pool-size: ${MAXIMUM_POOL_SIZE}
       connection-timeout: ${CONNECTION_TIMEOUT}
+      minimum-idle: ${MINIMUM_IDLE}
   jpa:
+    open-in-view: false
     hibernate:
       ddl-auto: validate  # Crea/Actualiza las tablas automaticamente a partir de las entidades
     show-sql: true      # Permite mostrar las consultas en la consola

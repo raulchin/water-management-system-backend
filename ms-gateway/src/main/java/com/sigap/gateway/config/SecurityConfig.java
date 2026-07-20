@@ -51,7 +51,8 @@ public class SecurityConfig {
         // 2. Agregamos el origen de tu frontend en Vercel junto al local
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
-                "https://water-management-system-frontend-o6pc-1i5ykhhnq.vercel.app"
+                "https://water-management-system-frontend-o6pc-1i5ykhhnq.vercel.app",
+                "https://water-management-system-frontend-o6.vercel.app"
                 // Si tienes un dominio personalizado apuntando a Vercel, agrégalo aquí también
         ));
         configuration.setAllowedMethods(List.of(

@@ -28,7 +28,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .cors(cors -> {})
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
@@ -48,7 +48,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        configuration.setAllowedOrigins(List.of("http://localhost:5173"));
+        // 2. Agregamos el origen de tu frontend en Vercel junto al local
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:5173",
+                "https://water-management-system-frontend-o6pc-1i5ykhhnq.vercel.app"
+                // Si tienes un dominio personalizado apuntando a Vercel, agrégalo aquí también
+        ));
         configuration.setAllowedMethods(List.of(
                 "GET",
                 "POST",

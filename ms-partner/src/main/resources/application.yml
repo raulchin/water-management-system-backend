@@ -4,22 +4,22 @@ spring:
     name: ms-partner
   profiles:
     default: default
-  config:
-    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:7777}
+
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5434/db_socios}
-    username: ${SPRING_DATASOURCE_USERNAME:userAdminSigap}
-    password: ${SPRING_DATASOURCE_PASSWORD:user_admin_sigap2026}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: ${MAXIMUM_POOL_SIZE:5}
-      connection-timeout: ${CONNECTION_TIMEOUT:20000}
+      maximum-pool-size: ${MAXIMUM_POOL_SIZE}
+      connection-timeout: ${CONNECTION_TIMEOUT}
   jpa:
     hibernate:
       ddl-auto: update  # Crea/Actualiza las tablas automaticamente a partir de las entidades
     show-sql: true      # Permite mostrar las consultas en la consola
 server:
-  port: 4041
+  port: ${PORT:4041}
+  address: 0.0.0.0
   servlet:
     context-path: /ms-partner
 
@@ -29,7 +29,13 @@ logging:
 
 eureka:
   instance:
-    instance-id: "${spring.application.name}:${random.value}"
+    hostname: ${RAILWAY_PRIVATE_DOMAIN:localhost}
+    prefer-ip-address: false
+    # Puerto interno real de ms-auth-server
+    non-secure-port: ${PORT:4041}
+    non-secure-port-enabled: true
+    secure-port-enabled: false
+    instance-id: ${spring.application.name}:${RAILWAY_REPLICA_ID:${random.value}}
   client:
     service-url:
       defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}

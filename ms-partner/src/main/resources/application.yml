@@ -4,6 +4,11 @@ spring:
     name: ms-partner
   profiles:
     default: default
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
 
   datasource:
     url: ${SPRING_DATASOURCE_URL}

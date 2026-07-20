@@ -20,7 +20,7 @@ spring:
       connection-timeout: ${CONNECTION_TIMEOUT}
   jpa:
     hibernate:
-      ddl-auto: update  # Crea/Actualiza las tablas automaticamente a partir de las entidades
+      ddl-auto: validate  # Crea/Actualiza las tablas automaticamente a partir de las entidades
     show-sql: true      # Permite mostrar las consultas en la consola
 server:
   port: ${PORT:4041}

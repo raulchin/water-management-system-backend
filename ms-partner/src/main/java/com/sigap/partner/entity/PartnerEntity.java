@@ -34,6 +34,7 @@ public class PartnerEntity {
     @Column( name = "telefono", nullable = false, length = 20 )
     private String phone;
 
+    @Column(name = "email", length = 100)
     private String email;
 
     @Column( name = "estado" )

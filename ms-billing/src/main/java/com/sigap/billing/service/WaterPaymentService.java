@@ -1,9 +1,6 @@
 package com.sigap.billing.service;
 
-import com.sigap.billing.dto.BatchWaterPaymentResponse;
-import com.sigap.billing.dto.CreateBatchWaterPaymentRequest;
-import com.sigap.billing.dto.CreateWaterPaymentRequest;
-import com.sigap.billing.dto.WaterPaymentResponse;
+import com.sigap.billing.dto.*;
 
 import java.util.List;
 
@@ -16,5 +13,9 @@ public interface WaterPaymentService {
     List<WaterPaymentResponse> findLast10();
 
     BatchWaterPaymentResponse createBatch(CreateBatchWaterPaymentRequest request);
+
+    ItemWaterPaymentResponse createByItems(CreateItemWaterPaymentRequest request);
+
+    List<PendingPaymentBillResponse> findPendingItemsByPartner(String identification);
 
 }

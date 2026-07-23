@@ -64,3 +64,81 @@ CREATE INDEX IF NOT EXISTS idx_pagos_socio_periodo ON pagos_agua (socio_id, peri
 CREATE INDEX idx_pagos_identificacion_socio ON pagos_agua (identificacion_socio);
 
 CREATE INDEX idx_pagos_numero_medidor ON pagos_agua (numero_medidor);
+
+
+CREATE TABLE IF NOT EXISTS tipos_multa (
+    tipo_multa_id BIGSERIAL PRIMARY KEY,
+    codigo VARCHAR(50) NOT NULL UNIQUE,
+    nombre VARCHAR(100) NOT NULL,
+    descripcion VARCHAR(300),
+    monto_base NUMERIC(12,2) NOT NULL DEFAULT 0,
+    activo BOOLEAN NOT NULL DEFAULT TRUE,
+    fecha_creacion TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP(6)
+);
+
+INSERT INTO tipos_multa (codigo, nombre, descripcion, monto_base)
+VALUES
+('MORA', 'Multa por mora', 'Multa aplicada por pago vencido', 1.50),
+('RECONEXION', 'Multa por reconexión', 'Valor aplicado por reconexión del servicio', 5.00),
+('MANIPULACION_MEDIDOR', 'Manipulación de medidor', 'Multa por manipulación no autorizada del medidor', 25.00),
+('OTRA', 'Otra multa', 'Multa administrativa personalizada', 0.00)
+ON CONFLICT (codigo) DO NOTHING;
+
+
+
+CREATE TABLE IF NOT EXISTS factura_multas (
+    factura_multa_id BIGSERIAL PRIMARY KEY,
+    factura_id BIGINT NOT NULL,
+    tipo_multa_id BIGINT NOT NULL,
+    socio_id BIGINT NOT NULL,
+    medidor_id BIGINT NOT NULL,
+    periodo VARCHAR(7) NOT NULL,
+    identificacion_socio VARCHAR(20),
+    numero_medidor VARCHAR(50),
+    codigo_multa VARCHAR(50) NOT NULL,
+    nombre_multa VARCHAR(100) NOT NULL,
+    monto NUMERIC(12,2) NOT NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'ACTIVA',
+    observacion VARCHAR(500),
+    fecha_aplicacion DATE NOT NULL DEFAULT CURRENT_DATE,
+    fecha_creacion TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP(6),
+
+    CONSTRAINT fk_factura_multa_factura FOREIGN KEY (factura_id) REFERENCES facturas_agua(factura_id),
+
+    CONSTRAINT fk_factura_multa_tipo FOREIGN KEY (tipo_multa_id) REFERENCES tipos_multa(tipo_multa_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_factura_multas_factura ON factura_multas (factura_id);
+
+CREATE INDEX IF NOT EXISTS idx_factura_multas_socio_periodo ON factura_multas (socio_id, periodo);
+
+CREATE INDEX IF NOT EXISTS idx_factura_multas_identificacion ON factura_multas (identificacion_socio);
+
+CREATE INDEX IF NOT EXISTS idx_factura_multas_estado ON factura_multas (estado);
+
+    CREATE TABLE IF NOT EXISTS pago_detalles (
+    pago_detalle_id BIGSERIAL PRIMARY KEY,
+    pago_id BIGINT NOT NULL,
+    factura_id BIGINT NOT NULL,
+    factura_multa_id BIGINT,
+    tipo_item VARCHAR(30) NOT NULL,
+    descripcion VARCHAR(200) NOT NULL,
+    monto_pagado NUMERIC(12,2) NOT NULL,
+    fecha_creacion TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_pago_detalle_pago FOREIGN KEY (pago_id) REFERENCES pagos_agua(pago_id),
+
+    CONSTRAINT fk_pago_detalle_factura FOREIGN KEY (factura_id) REFERENCES facturas_agua(factura_id),
+
+    CONSTRAINT fk_pago_detalle_multa FOREIGN KEY (factura_multa_id) REFERENCES factura_multas(factura_multa_id)
+);
+
+    CREATE INDEX IF NOT EXISTS idx_pago_detalles_pago ON pago_detalles (pago_id);
+
+CREATE INDEX IF NOT EXISTS idx_pago_detalles_factura ON pago_detalles (factura_id);
+
+CREATE INDEX IF NOT EXISTS idx_pago_detalles_multa ON pago_detalles (factura_multa_id);
+
+CREATE INDEX IF NOT EXISTS idx_pago_detalles_tipo ON pago_detalles (tipo_item);

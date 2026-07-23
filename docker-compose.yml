@@ -8,19 +8,6 @@ services:
     networks:
       - sigap-network
 
-  ms-config:
-    container_name: ms-config
-    build: ./ms-config-server
-    image: ms-config:1.0.0
-    ports:
-      - "7777:7777"
-    depends_on:
-      - ms-eureka
-    environment:
-      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://ms-eureka:8761/eureka/
-    networks:
-      - sigap-network
-
   ms-gateway:
     container_name: ms-gateway
     build: ./ms-gateway
@@ -29,7 +16,6 @@ services:
       - "4040:4040"
     depends_on:
       - ms-eureka
-      - ms-config
     environment:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://ms-eureka:8761/eureka/
     networks:
@@ -43,14 +29,16 @@ services:
       - "8890:8890"
     depends_on:
       - ms-eureka
-      - ms-config
       - db-user
     environment:
-      SPRING_CONFIG_IMPORT: optional:configserver:http://ms-config:7777
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://ms-eureka:8761/eureka/
+      RAILWAY_PRIVATE_DOMAIN: ms-auth-server
       SPRING_DATASOURCE_URL: jdbc:postgresql://db-user:5432/db-users
       SPRING_DATASOURCE_USERNAME: userAdminSigap
       SPRING_DATASOURCE_PASSWORD: user_admin_sigap2026
+      MAXIMUM_POOL_SIZE: 2
+      CONNECTION_TIMEOUT: 30000
+      MINIMUM_IDLE: 0
     networks:
       - sigap-network
 
@@ -62,16 +50,16 @@ services:
       - "4041:4041"
     depends_on:
       - ms-eureka
-      - ms-config
       - db-socios
     environment:
-      SPRING_CONFIG_IMPORT: optional:configserver:http://ms-config:7777
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://ms-eureka:8761/eureka/
+      RAILWAY_PRIVATE_DOMAIN: ms-partner
       SPRING_DATASOURCE_URL: jdbc:postgresql://db-socios:5432/db_socios
       SPRING_DATASOURCE_USERNAME: userSociosSigap
       SPRING_DATASOURCE_PASSWORD: systemSociosSigap2026
       MAXIMUM_POOL_SIZE: 5
       CONNECTION_TIMEOUT: 20000
+      MINIMUM_IDLE: 0
     networks:
       - sigap-network
 
@@ -83,16 +71,16 @@ services:
       - "4043:4043"
     depends_on:
       - ms-eureka
-      - ms-config
       - db-meters
     environment:
-      SPRING_CONFIG_IMPORT: optional:configserver:http://ms-config:7777
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://ms-eureka:8761/eureka/
+      RAILWAY_PRIVATE_DOMAIN: ms-meters
       SPRING_DATASOURCE_URL: jdbc:postgresql://db-meters:5432/db-meters
       SPRING_DATASOURCE_USERNAME: userAdminSigap
       SPRING_DATASOURCE_PASSWORD: user_admin_sigap2026
       MAXIMUM_POOL_SIZE: 5
       CONNECTION_TIMEOUT: 20000
+      MINIMUM_IDLE: 0
     networks:
       - sigap-network
 

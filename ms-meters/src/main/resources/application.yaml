@@ -7,22 +7,26 @@ spring:
       enabled: true
   profiles:
     default: default
-  config:
-    import: ${SPRING_CONFIG_IMPORT:optional:configserver:http://localhost:7777}
+  cloud:
+    config:
+      enabled: false
+      import-check:
+        enabled: false
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5436/db-meters}
-    username: ${SPRING_DATASOURCE_USERNAME:userAdminSigap}
-    password: ${SPRING_DATASOURCE_PASSWORD:user_admin_sigap2026}
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
-      maximum-pool-size: ${MAXIMUM_POOL_SIZE:5}
-      connection-timeout: ${CONNECTION_TIMEOUT:20000}
+      maximum-pool-size: ${MAXIMUM_POOL_SIZE}
+      connection-timeout: ${CONNECTION_TIMEOUT}
+      minimum-idle: ${MINIMUM_IDLE}
   jpa:
     hibernate:
       ddl-auto: update  # Crea/Actualiza las tablas automaticamente a partir de las entidades
     show-sql: true      # Permite mostrar las consultas en la consola
 server:
-  port: 4043
+  port: ${PORT:4043}
   servlet:
     context-path: /ms-meters
 
@@ -32,9 +36,13 @@ logging:
 
 eureka:
   instance:
-    instance-id: "${spring.application.name}:${random.value}"
+    hostname: ${RAILWAY_PRIVATE_DOMAIN:localhost}
+    prefer-ip-address: false
+    non-secure-port: ${PORT:4043}
+    non-secure-port-enabled: true
+    instance-id: ${spring.application.name}:${RAILWAY_REPLICA_ID:${random.value}}
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka/}
     register-with-eureka: true
     fetch-registry: true

@@ -45,6 +45,33 @@ public class WaterPaymentController {
                 ));
     }
 
+    @PostMapping("/items")
+    public ResponseEntity<ApiResponse<ItemWaterPaymentResponse>> createByItems(
+            @Valid @RequestBody CreateItemWaterPaymentRequest request
+    ) {
+        log.info("Registrar cobro por items. itemsCount={}", request.items().size());
+
+        return ResponseEntity.status(201)
+                .body(ApiResponse.success(
+                        "Cobro por items registrado correctamente",
+                        waterPaymentService.createByItems(request)
+                ));
+    }
+
+    @GetMapping("/items-pendientes")
+    public ResponseEntity<ApiResponse<List<PendingPaymentBillResponse>>> findPendingItemsByPartner(
+            @RequestParam String identification
+    ) {
+        log.info("Consultar items pendientes de cobro. identification={}", identification);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Items pendientes consultados correctamente",
+                        waterPaymentService.findPendingItemsByPartner(identification)
+                )
+        );
+    }
+
     @GetMapping("/factura/{billId}")
     public ResponseEntity<ApiResponse<List<WaterPaymentResponse>>> findByBillId(
             @PathVariable Long billId

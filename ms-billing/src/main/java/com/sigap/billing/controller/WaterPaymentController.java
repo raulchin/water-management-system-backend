@@ -96,4 +96,16 @@ public class WaterPaymentController {
         );
     }
 
+    @GetMapping("/items")
+    public ResponseEntity<ApiResponse<List<WaterPaymentResponse>>> findAllPaymentItems() {
+        log.info("Consultar todos los items de cobro registrados.");
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Items de cobro consultados correctamente",
+                        waterPaymentService.findAllPaymentItems()
+                )
+        );
+    }
+
 }

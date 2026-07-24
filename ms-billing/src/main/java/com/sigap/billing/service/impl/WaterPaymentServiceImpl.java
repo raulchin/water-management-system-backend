@@ -262,6 +262,18 @@ public class WaterPaymentServiceImpl implements WaterPaymentService {
                 .toList();
     }
 
+    @Override
+    public List<WaterPaymentResponse> findAllPaymentItems() {
+
+        log.info("Consultando todos los items de cobro ordenados por fecha de creacion descendente.");
+
+        return waterPaymentRepository.findAllByOrderByCreationDateDesc()
+                .stream()
+                .map(this::toResponseWithoutBill)
+                .toList();
+
+    }
+
     private PendingPaymentBillResponse toPendingPaymentBillResponse(WaterBillEntity bill) {
         List<PendingPaymentItemResponse> items = new ArrayList<>();
 

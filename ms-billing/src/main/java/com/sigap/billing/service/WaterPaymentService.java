@@ -18,4 +18,6 @@ public interface WaterPaymentService {
 
     List<PendingPaymentBillResponse> findPendingItemsByPartner(String identification);
 
+    List<WaterPaymentResponse> findAllPaymentItems();
+
 }

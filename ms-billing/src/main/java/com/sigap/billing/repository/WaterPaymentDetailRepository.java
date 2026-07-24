@@ -13,6 +13,8 @@ public interface WaterPaymentDetailRepository extends JpaRepository<WaterPayment
 
     List<WaterPaymentDetailEntity> findByPaymentIdOrderByCreationDateAsc(Long paymentId);
 
+    List<WaterPaymentDetailEntity> findAllByOrderByCreationDateDesc();
+
     @Query("""
             select coalesce(sum(detail.paymentAmount), 0)
             from WaterPaymentDetailEntity detail

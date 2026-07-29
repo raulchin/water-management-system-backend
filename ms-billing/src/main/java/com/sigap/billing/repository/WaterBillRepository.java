@@ -32,4 +32,10 @@ public interface WaterBillRepository extends JpaRepository<WaterBillEntity, Long
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select bill from WaterBillEntity bill where bill.billId = :billId")
     Optional<WaterBillEntity> findByIdForUpdate(@Param("billId") Long billId);
+
+    Optional<WaterBillEntity> findByReadingId(Long readingId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select bill from WaterBillEntity bill where bill.readingId = :readingId")
+    Optional<WaterBillEntity> findByReadingIdForUpdate(@Param("readingId") Long readingId);
 }

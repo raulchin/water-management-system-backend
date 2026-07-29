@@ -13,9 +13,18 @@ public interface MeterReadingRepository extends JpaRepository<MeterReadingEntity
 
     boolean existsByMeterIdAndPeriodAndReadingIdNot(Long meterId, String period, Long readingId);
 
+    boolean existsByMeterIdAndPeriodGreaterThan(Long meterId, String period);
+
     List<MeterReadingEntity> findByMeterId(Long meterId);
 
     Optional<MeterReadingEntity> findByMeterIdAndPeriod(Long meterId, String period);
 
     List<MeterReadingEntity> findByAssignmentIdInAndPeriod(Collection<Long> assignmentIds, String period);
+
+    Optional<MeterReadingEntity> findTopByMeterIdAndPeriodLessThanOrderByPeriodDesc(
+            Long meterId,
+            String period
+    );
+
+
 }

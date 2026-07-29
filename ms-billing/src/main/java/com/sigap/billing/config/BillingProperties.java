@@ -16,4 +16,8 @@ public class BillingProperties {
     private BigDecimal baseFee = BigDecimal.ZERO;
     private BigDecimal consumptionUnitPrice = BigDecimal.ZERO;
     private Integer dueDays = 15;
+
+    private BigDecimal includedConsumption = BigDecimal.TEN;
+    private BigDecimal minimumConsumptionAmount = BigDecimal.TEN;
+    private BigDecimal excessUnitPrice = BigDecimal.ONE;
 }

@@ -94,11 +94,20 @@ public class WaterBillServiceImpl implements WaterBillService {
             throw new DuplicateResourceException("Ya existe una factura para el medidor y periodo indicados");
         }
 
-        BigDecimal baseFee = defaultZero(billingProperties.getBaseFee());
-        BigDecimal consumptionAmount = request.calculatedConsumption()
-                .multiply(defaultZero(billingProperties.getConsumptionUnitPrice()));
+        BigDecimal baseFee = defaultZero(billingProperties.getMinimumConsumptionAmount());
+        BigDecimal consumptionAmount = calculateExcessConsumptionAmount(request.calculatedConsumption());
 
         LocalDate dueDate = LocalDate.now().plusDays(billingProperties.getDueDays());
+
+        log.info(
+                "Calculo de factura. readingId={}, calculatedConsumption={}, includedConsumption={}, baseFee={}, excessAmount={}, totalBeforePenalties={}",
+                request.readingId(),
+                request.calculatedConsumption(),
+                billingProperties.getIncludedConsumption(),
+                baseFee,
+                consumptionAmount,
+                baseFee.add(consumptionAmount)
+        );
 
         WaterBillEntity entity = WaterBillEntity.builder()
                 .readingId(request.readingId())
@@ -120,7 +129,18 @@ public class WaterBillServiceImpl implements WaterBillService {
                 .observation(normalize(request.observation()))
                 .build();
 
-        return toResponse(waterBillRepository.save(entity));
+        WaterBillEntity saved = waterBillRepository.save(entity);
+        log.info(
+                "Factura creada automaticamente. billId={}, readingId={}, meterId={}, period={}, totalAmount={}, pendingBalance={}",
+                saved.getBillId(),
+                saved.getReadingId(),
+                saved.getMeterId(),
+                saved.getPeriod(),
+                saved.getTotalAmount(),
+                saved.getPendingBalance()
+        );
+
+        return toResponse(saved);
     }
 
     @Override
@@ -216,6 +236,75 @@ public class WaterBillServiceImpl implements WaterBillService {
 
     }
 
+    @Override
+    public void validateCanRecalculateFromReading(Long readingId) {
+        log.info("Validando si factura puede recalcularse. readingId={}", readingId);
+
+        WaterBillEntity bill = waterBillRepository.findByReadingId(readingId)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe factura para la lectura " + readingId
+                ));
+
+        validateBillCanBeRecalculated(bill);
+
+        log.info(
+                "Factura puede recalcularse. billId={}, readingId={}, status={}, paidAmount={}",
+                bill.getBillId(),
+                bill.getReadingId(),
+                bill.getStatus(),
+                bill.getPaidAmount()
+        );
+    }
+
+    @Override
+    @Transactional
+    public WaterBillResponse recalculateFromReading(RecalculateWaterBillFromReadingRequest request) {
+
+        log.info(
+                "Recalculando factura desde lectura actualizada. readingId={}, meterId={}, period={}",
+                request.readingId(),
+                request.meterId(),
+                request.period()
+        );
+
+        WaterBillEntity bill = waterBillRepository.findByReadingIdForUpdate(request.readingId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No existe factura para la lectura " + request.readingId()
+                ));
+
+        validateBillCanBeRecalculated(bill);
+
+        BigDecimal baseFee = defaultZero(billingProperties.getMinimumConsumptionAmount());
+        BigDecimal consumptionAmount = calculateExcessConsumptionAmount(request.calculatedConsumption());
+
+        bill.setMeterId(request.meterId());
+        bill.setAssignmentId(request.assignmentId());
+        bill.setPartnerId(request.partnerId());
+        bill.setPeriod(normalize(request.period()));
+        bill.setPartnerIdentification(normalize(request.partnerIdentification()));
+        bill.setPartnerName(normalize(request.partnerName()));
+        bill.setMeterNumber(normalize(request.meterNumber()));
+        bill.setCalculatedConsumption(request.calculatedConsumption());
+        bill.setBaseFee(baseFee);
+        bill.setConsumptionAmount(consumptionAmount);
+        bill.setObservation(normalize(request.observation()));
+
+        WaterBillEntity updated = waterBillRepository.save(bill);
+
+        log.info(
+                "Factura recalculada correctamente. billId={}, readingId={}, calculatedConsumption={}, baseFee={}, consumptionAmount={}, totalAmount={}, pendingBalance={}",
+                updated.getBillId(),
+                updated.getReadingId(),
+                updated.getCalculatedConsumption(),
+                updated.getBaseFee(),
+                updated.getConsumptionAmount(),
+                updated.getTotalAmount(),
+                updated.getPendingBalance()
+        );
+
+        return toResponse(updated);
+    }
+
     private MeterReadingResponse findReading(Long readingId) {
         try {
             ApiResponse<MeterReadingResponse> response = readingClient.findById(readingId);
@@ -290,5 +379,49 @@ public class WaterBillServiceImpl implements WaterBillService {
                 entity.getCreationDate(),
                 entity.getUpdateDate()
         );
+    }
+
+    private BigDecimal calculateExcessConsumptionAmount(BigDecimal calculatedConsumption) {
+        BigDecimal consumption = defaultZero(calculatedConsumption);
+        BigDecimal includedConsumption = defaultZero(billingProperties.getIncludedConsumption());
+        BigDecimal excessUnitPrice = defaultZero(billingProperties.getExcessUnitPrice());
+
+        if (consumption.compareTo(includedConsumption) <= 0) {
+            log.info(
+                    "Consumo dentro del minimo permitido. calculatedConsumption={}, includedConsumption={}, excessAmount=0",
+                    consumption,
+                    includedConsumption
+            );
+
+            return BigDecimal.ZERO;
+        }
+
+        BigDecimal excessConsumption = consumption.subtract(includedConsumption);
+        BigDecimal excessAmount = excessConsumption.multiply(excessUnitPrice);
+
+        log.info(
+                "Consumo excedido calculado. calculatedConsumption={}, includedConsumption={}, excessConsumption={}, excessUnitPrice={}, excessAmount={}",
+                consumption,
+                includedConsumption,
+                excessConsumption,
+                excessUnitPrice,
+                excessAmount
+        );
+
+        return excessAmount;
+    }
+
+    private void validateBillCanBeRecalculated(WaterBillEntity bill) {
+        if (WaterBillStatus.ANULADA.equals(bill.getStatus())) {
+            throw new BadRequestException("No se puede actualizar la lectura porque la factura se encuentra anulada");
+        }
+
+        if (WaterBillStatus.PAGADA.equals(bill.getStatus())) {
+            throw new BadRequestException("No se puede actualizar la lectura porque la factura ya se encuentra pagada");
+        }
+
+        if (bill.getPaidAmount() != null && bill.getPaidAmount().compareTo(BigDecimal.ZERO) > 0) {
+            throw new BadRequestException("No se puede actualizar la lectura porque la factura ya tiene pagos registrados");
+        }
     }
 }

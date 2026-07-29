@@ -1,9 +1,6 @@
 package com.sigap.readings.service;
 
-import com.sigap.readings.dto.CreateMeterReadingRequest;
-import com.sigap.readings.dto.MeterReadingResponse;
-import com.sigap.readings.dto.MeterReadingSearchResponse;
-import com.sigap.readings.dto.UpdateMeterReadingRequest;
+import com.sigap.readings.dto.*;
 
 import java.util.List;
 
@@ -26,4 +23,8 @@ public interface MeterReadingService {
             String meterNumber,
             String period
     );
+
+    PreviousMeterReadingResponse findPreviousByMeterIdAndPeriod(Long meterId, String period);
+
+    PageResponse<MeterReadingResponse> findAllPaged(int page, int size);
 }

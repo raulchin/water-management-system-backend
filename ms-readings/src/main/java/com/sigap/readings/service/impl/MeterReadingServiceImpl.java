@@ -1,10 +1,12 @@
 package com.sigap.readings.service.impl;
 
 import com.sigap.readings.client.MeterClient;
+import com.sigap.readings.client.billing.BillingClient;
 import com.sigap.readings.dto.*;
 import com.sigap.readings.entity.MeterReadingEntity;
 import com.sigap.readings.enums.MeterReadingStatus;
 import com.sigap.readings.event.MeterReadingCreatedEvent;
+import com.sigap.readings.event.MeterReadingUpdatedEvent;
 import com.sigap.readings.exception.BadRequestException;
 import com.sigap.readings.exception.DuplicateResourceException;
 import com.sigap.readings.exception.ResourceNotFoundException;
@@ -14,6 +16,10 @@ import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,18 +41,45 @@ public class MeterReadingServiceImpl implements MeterReadingService {
 
     private final ApplicationEventPublisher eventPublisher;
 
+    private final BillingClient billingClient;
+
     @Override
     @Transactional
     public MeterReadingResponse create(CreateMeterReadingRequest request) {
 
         String period = normalize(request.period());
+
+        log.info(
+                "Inicia registro de lectura. meterId={}, assignmentId={}, partnerId={}, period={}",
+                request.meterId(),
+                request.assignmentId(),
+                request.partnerId(),
+                period
+        );
+
         PartnerMeterResponse assignment = validateAssignment(request);
-        validateReadingValues(request.previousReading(), request.currentReading());
+
+        BigDecimal previousReading = resolvePreviousReading(
+                request.meterId(),
+                period,
+                request.previousReading()
+        );
+
+        validateReadingValues(previousReading, request.currentReading());
         validatePeriodAvailability(request.meterId(), period, null);
 
-        MeterReadingEntity entity = getMeterReadingEntity(request, period);
+        MeterReadingEntity entity = getMeterReadingEntity(request, period, previousReading);
 
         MeterReadingEntity saved = meterReadingRepository.save(entity);
+        log.info(
+                "Lectura registrada correctamente. readingId={}, meterId={}, period={}, previousReading={}, currentReading={}, calculatedConsumption={}",
+                saved.getReadingId(),
+                saved.getMeterId(),
+                saved.getPeriod(),
+                saved.getPreviousReading(),
+                saved.getCurrentReading(),
+                saved.getCalculatedConsumption()
+        );
 
         eventPublisher.publishEvent(new MeterReadingCreatedEvent(saved, assignment));
 
@@ -54,14 +87,18 @@ public class MeterReadingServiceImpl implements MeterReadingService {
 
     }
 
-    private MeterReadingEntity getMeterReadingEntity(CreateMeterReadingRequest request, String period) {
+    private MeterReadingEntity getMeterReadingEntity(
+            CreateMeterReadingRequest request,
+            String period,
+            BigDecimal previousReading
+    ) {
         MeterReadingEntity entity = new MeterReadingEntity();
         entity.setMeterId(request.meterId());
         entity.setAssignmentId(request.assignmentId());
         entity.setPartnerId(request.partnerId());
         entity.setPeriod(period);
         entity.setReadingDate(request.readingDate());
-        entity.setPreviousReading(request.previousReading());
+        entity.setPreviousReading(previousReading);
         entity.setCurrentReading(request.currentReading());
         entity.setStatus(request.status() == null ? MeterReadingStatus.REGISTRADA : request.status());
         entity.setObservation(normalize(request.observation()));
@@ -115,11 +152,30 @@ public class MeterReadingServiceImpl implements MeterReadingService {
     @Override
     @Transactional
     public MeterReadingResponse update(Long readingId, UpdateMeterReadingRequest request) {
+
+        log.info(
+                "Inicia correccion de lectura. readingId={}, meterId={}, period={}",
+                readingId,
+                request.meterId(),
+                request.period()
+        );
+
         MeterReadingEntity entity = findReading(readingId);
+        validateIsLastReading(entity);
+        validateBillCanBeRecalculated(readingId);
+
         String period = normalize(request.period());
+
+        if (!entity.getMeterId().equals(request.meterId())) {
+            throw new BadRequestException("No se permite cambiar el medidor de una lectura registrada");
+        }
+
+        if (!entity.getPeriod().equals(period)) {
+            throw new BadRequestException("No se permite cambiar el periodo de una lectura registrada");
+        }
         validateReadingValues(request.previousReading(), request.currentReading());
         validatePeriodAvailability(request.meterId(), period, readingId);
-
+        PartnerMeterResponse assignment = findAssignment(request.assignmentId());
         entity.setMeterId(request.meterId());
         entity.setAssignmentId(request.assignmentId());
         entity.setPartnerId(request.partnerId());
@@ -129,8 +185,21 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         entity.setCurrentReading(request.currentReading());
         entity.setStatus(request.status());
         entity.setObservation(normalize(request.observation()));
+        MeterReadingEntity saved = meterReadingRepository.saveAndFlush(entity);
 
-        return toResponse(meterReadingRepository.saveAndFlush(entity));
+        log.info(
+                "Lectura corregida correctamente. readingId={}, meterId={}, period={}, previousReading={}, currentReading={}, calculatedConsumption={}",
+                saved.getReadingId(),
+                saved.getMeterId(),
+                saved.getPeriod(),
+                saved.getPreviousReading(),
+                saved.getCurrentReading(),
+                saved.getCalculatedConsumption()
+        );
+
+        eventPublisher.publishEvent(new MeterReadingUpdatedEvent(saved, assignment));
+        return toResponse(saved);
+
     }
 
     @Override
@@ -153,6 +222,94 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         }
 
         return searchByMeterNumber(normalizedMeterNumber, normalizedPeriod);
+    }
+
+    @Override
+    public PreviousMeterReadingResponse findPreviousByMeterIdAndPeriod(Long meterId, String period) {
+
+        String normalizedPeriod = normalize(period);
+
+        if (normalizedPeriod == null || normalizedPeriod.isBlank()) {
+            throw new BadRequestException("El periodo es obligatorio");
+        }
+
+        log.info("Consultando lectura anterior. meterId={}, period={}", meterId, normalizedPeriod);
+
+        return meterReadingRepository.findTopByMeterIdAndPeriodLessThanOrderByPeriodDesc(
+                        meterId,
+                        normalizedPeriod
+                )
+                .map(previousReading -> {
+                    log.info(
+                            "Lectura anterior encontrada. meterId={}, previousPeriod={}, previousReading={}",
+                            meterId,
+                            previousReading.getPeriod(),
+                            previousReading.getCurrentReading()
+                    );
+
+                    return new PreviousMeterReadingResponse(
+                            meterId,
+                            normalizedPeriod,
+                            previousReading.getPeriod(),
+                            previousReading.getCurrentReading(),
+                            true
+                    );
+                })
+                .orElseGet(() -> {
+                    log.info(
+                            "No existe lectura anterior. meterId={}, period={}",
+                            meterId,
+                            normalizedPeriod
+                    );
+
+                    return new PreviousMeterReadingResponse(
+                            meterId,
+                            normalizedPeriod,
+                            null,
+                            BigDecimal.ZERO,
+                            false
+                    );
+                });
+
+    }
+
+    @Override
+    public PageResponse<MeterReadingResponse> findAllPaged(int page, int size) {
+
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 10 : Math.min(size, 100);
+
+        Pageable pageable = PageRequest.of(
+                safePage,
+                safeSize,
+                Sort.by(Sort.Direction.DESC, "creationDate")
+        );
+
+        Page<MeterReadingEntity> readingsPage = meterReadingRepository.findAll(pageable);
+
+        Map<Long, PartnerMeterResponse> assignments = readingsPage.getContent()
+                .stream()
+                .map(MeterReadingEntity::getAssignmentId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .collect(Collectors.toMap(
+                        assignmentId -> assignmentId,
+                        this::findAssignment
+                ));
+
+        List<MeterReadingResponse> content = readingsPage.getContent()
+                .stream()
+                .map(reading -> toResponseList(reading, assignments.get(reading.getAssignmentId())))
+                .toList();
+
+        return new PageResponse<>(
+                content,
+                readingsPage.getNumber(),
+                readingsPage.getSize(),
+                readingsPage.getTotalElements(),
+                readingsPage.getTotalPages(),
+                readingsPage.isLast()
+        );
     }
 
     private void validateSearchCriteria(String identification, String meterNumber, String period) {
@@ -343,7 +500,14 @@ public class MeterReadingServiceImpl implements MeterReadingService {
 
     private MeterReadingResponse toResponseList(MeterReadingEntity entity, PartnerMeterResponse assignment) {
 
-        log.info("Datos asignacion: ", assignment.toString());
+
+        log.info(
+                "Construyendo respuesta de lectura. readingId={}, assignmentId={}, hasAssignment={}",
+                entity.getReadingId(),
+                entity.getAssignmentId(),
+                assignment != null
+        );
+
         return new MeterReadingResponse(
                 entity.getReadingId(),
                 entity.getMeterId(),
@@ -399,6 +563,93 @@ public class MeterReadingServiceImpl implements MeterReadingService {
         } catch (FeignException.NotFound ex) {
             throw new ResourceNotFoundException(
                     "No existe la asignacion con id: " + request.assignmentId()
+            );
+        }
+    }
+
+    private BigDecimal resolvePreviousReading(
+            Long meterId,
+            String period,
+            BigDecimal requestedPreviousReading
+    ) {
+        if (requestedPreviousReading != null) {
+            log.info(
+                    "Usando lectura anterior enviada en request. meterId={}, period={}, previousReading={}",
+                    meterId,
+                    period,
+                    requestedPreviousReading
+            );
+            return requestedPreviousReading;
+        }
+
+        return meterReadingRepository.findTopByMeterIdAndPeriodLessThanOrderByPeriodDesc(meterId, period)
+                .map(previousReading -> {
+                    log.info(
+                            "Lectura anterior calculada desde historial. meterId={}, previousPeriod={}, previousReading={}",
+                            meterId,
+                            previousReading.getPeriod(),
+                            previousReading.getCurrentReading()
+                    );
+
+                    return previousReading.getCurrentReading();
+                })
+                .orElseGet(() -> {
+                    log.info(
+                            "No existe lectura anterior, se usara cero. meterId={}, period={}",
+                            meterId,
+                            period
+                    );
+
+                    return BigDecimal.ZERO;
+                });
+    }
+
+    private void validateIsLastReading(MeterReadingEntity entity) {
+        boolean hasLaterReading = meterReadingRepository.existsByMeterIdAndPeriodGreaterThan(
+                entity.getMeterId(),
+                entity.getPeriod()
+        );
+
+        if (hasLaterReading) {
+            log.warn(
+                    "Intento de corregir lectura que no es la ultima. readingId={}, meterId={}, period={}",
+                    entity.getReadingId(),
+                    entity.getMeterId(),
+                    entity.getPeriod()
+            );
+
+            throw new BadRequestException("Solo se puede actualizar la ultima lectura registrada del medidor");
+        }
+
+        log.info(
+                "Lectura validada como ultima del medidor. readingId={}, meterId={}, period={}",
+                entity.getReadingId(),
+                entity.getMeterId(),
+                entity.getPeriod()
+        );
+    }
+
+    private void validateBillCanBeRecalculated(Long readingId) {
+        try {
+            log.info("Validando factura antes de corregir lectura. readingId={}", readingId);
+
+            billingClient.validateCanRecalculateFromReading(readingId);
+
+            log.info("Factura validada para recalculo. readingId={}", readingId);
+
+        } catch (FeignException.BadRequest ex) {
+            log.warn(
+                    "No se puede actualizar lectura porque la factura no permite recalculo. readingId={}, status={}",
+                    readingId,
+                    ex.status()
+            );
+
+            throw new BadRequestException("No se puede actualizar la lectura porque la factura ya se encuentra pagada o tiene pagos registrados");
+
+        } catch (FeignException.NotFound ex) {
+            log.warn(
+                    "No existe factura asociada a lectura. Se permite correccion de lectura. readingId={}",
+                    readingId
             );
         }
     }

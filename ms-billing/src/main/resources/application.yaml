@@ -53,6 +53,7 @@ clients:
     url: ${MS_READINGS_URL:http://localhost:4044}
 
 billing:
-  base-fee: ${BILLING_BASE_FEE:2.00}
-  consumption-unit-price: ${BILLING_CONSUMPTION_UNIT_PRICE:0.50}
   due-days: ${BILLING_DUE_DAYS:15}
+  included-consumption: ${BILLING_INCLUDED_CONSUMPTION:10.00}
+  minimum-consumption-amount: ${BILLING_MINIMUM_CONSUMPTION_AMOUNT:10.00}
+  excess-unit-price: ${BILLING_EXCESS_UNIT_PRICE:1.00}

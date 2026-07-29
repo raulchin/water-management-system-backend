@@ -1,6 +1,7 @@
 package com.sigap.billing.controller;
 
 import com.sigap.billing.dto.*;
+import com.sigap.billing.exception.BadRequestException;
 import com.sigap.billing.service.WaterBillService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -83,6 +84,38 @@ public class WaterBillController {
                 ApiResponse.success(
                         "Facturas pendientes consultadas correctamente",
                         waterBillService.findPendingByPartner(identification)
+                )
+        );
+    }
+
+    @GetMapping("/from-reading/{readingId}/can-recalculate")
+    public ResponseEntity<ApiResponse<Void>> validateCanRecalculateFromReading(
+            @PathVariable Long readingId
+    ) {
+        log.info("Validar si factura puede recalcularse desde lectura. readingId={}", readingId);
+
+        waterBillService.validateCanRecalculateFromReading(readingId);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("La factura puede recalcularse", null)
+        );
+    }
+
+    @PostMapping("/from-reading/{readingId}/recalculate")
+    public ResponseEntity<ApiResponse<WaterBillResponse>> recalculateFromReading(
+            @PathVariable Long readingId,
+            @Valid @RequestBody RecalculateWaterBillFromReadingRequest request
+    ) {
+        log.info("Recalcular factura desde lectura actualizada. readingId={}", readingId);
+
+        if (!readingId.equals(request.readingId())) {
+            throw new BadRequestException("El readingId de la URL no coincide con el request");
+        }
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Factura recalculada correctamente desde lectura",
+                        waterBillService.recalculateFromReading(request)
                 )
         );
     }

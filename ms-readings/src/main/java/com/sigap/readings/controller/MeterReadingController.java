@@ -38,12 +38,20 @@ public class MeterReadingController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<MeterReadingResponse>>> findAll() {
-        log.info("Proceso para obtener las lectura de los medidores..");
+    public ResponseEntity<ApiResponse<PageResponse<MeterReadingResponse>>> findAllPaged(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        log.info("Consultar lecturas paginadas. page={}, size={}", page, size);
+
         return ResponseEntity.ok(
-                ApiResponse.success("Lecturas de medidor consultadas correctamente", meterReadingService.findAll())
+                ApiResponse.success(
+                        "Lecturas de medidor consultadas correctamente",
+                        meterReadingService.findAllPaged(page, size)
+                )
         );
     }
+
 
     @GetMapping("/{readingId}")
     public ResponseEntity<ApiResponse<MeterReadingResponse>> findById(@PathVariable Long readingId) {
@@ -56,6 +64,21 @@ public class MeterReadingController {
     public ResponseEntity<ApiResponse<List<MeterReadingResponse>>> findByMeterId(@PathVariable Long meterId) {
         return ResponseEntity.ok(
                 ApiResponse.success("Lecturas de medidor consultadas correctamente", meterReadingService.findByMeterId(meterId))
+        );
+    }
+
+    @GetMapping("/medidor/{meterId}/previous")
+    public ResponseEntity<ApiResponse<PreviousMeterReadingResponse>> findPreviousByMeterIdAndPeriod(
+            @PathVariable Long meterId,
+            @RequestParam String period
+    ) {
+        log.info("Consultar lectura anterior. meterId={}, period={}", meterId, period);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Lectura anterior consultada correctamente",
+                        meterReadingService.findPreviousByMeterIdAndPeriod(meterId, period)
+                )
         );
     }
 

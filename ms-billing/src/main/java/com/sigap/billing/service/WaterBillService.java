@@ -1,9 +1,6 @@
 package com.sigap.billing.service;
 
-import com.sigap.billing.dto.CreateWaterBillFromReadingRequest;
-import com.sigap.billing.dto.CreateWaterBillRequest;
-import com.sigap.billing.dto.UpdateWaterBillRequest;
-import com.sigap.billing.dto.WaterBillResponse;
+import com.sigap.billing.dto.*;
 
 import java.util.List;
 
@@ -26,4 +23,8 @@ public interface WaterBillService {
     void cancel(Long billId);
 
     List<WaterBillResponse> findLast10();
+
+    void validateCanRecalculateFromReading(Long readingId);
+
+    WaterBillResponse recalculateFromReading(RecalculateWaterBillFromReadingRequest request);
 }
